@@ -7,6 +7,7 @@ starlette==0.46.2
 # Database
 SQLAlchemy==2.0.41
 asyncpg==0.30.0
+psycopg2-binary==2.9.10
 
 # Pydantic
 pydantic==2.11.5
