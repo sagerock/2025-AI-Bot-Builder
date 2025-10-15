@@ -18,7 +18,7 @@ class DocumentService:
         """Extract text from PDF file"""
         try:
             pdf_file = io.BytesIO(file_content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            pdf_reader = PdfReader(pdf_file)
 
             text_parts = []
             for page_num, page in enumerate(pdf_reader.pages, 1):
