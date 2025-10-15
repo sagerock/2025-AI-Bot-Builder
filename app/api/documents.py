@@ -22,6 +22,24 @@ class UploadResponse(BaseModel):
     collection: str
 
 
+class FileUploadResult(BaseModel):
+    filename: str
+    success: bool
+    chunks_count: int
+    point_ids: List[str]
+    error: Optional[str] = None
+
+
+class MultiUploadResponse(BaseModel):
+    success: bool
+    message: str
+    total_files: int
+    successful_files: int
+    failed_files: int
+    results: List[FileUploadResult]
+    collection: str
+
+
 class CreateCollectionRequest(BaseModel):
     name: str
     vector_size: int = 1536
@@ -141,6 +159,143 @@ async def upload_document(
     except Exception as e:
         print(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.post("/upload-multiple", response_model=MultiUploadResponse)
+async def upload_multiple_documents(
+    files: List[UploadFile] = File(...),
+    collection: str = Form(...),
+    chunk_size: int = Form(1000),
+    chunk_overlap: int = Form(200),
+    create_if_missing: bool = Form(False),
+    username: str = Depends(require_auth_dependency)
+):
+    """
+    Upload multiple documents at once, process them, and store chunks in Qdrant
+
+    Args:
+        files: List of document files (PDF, TXT, MD, HTML)
+        collection: Target Qdrant collection
+        chunk_size: Size of each text chunk
+        chunk_overlap: Overlap between chunks
+        create_if_missing: Create collection if it doesn't exist
+    """
+    try:
+        # Check if collection exists
+        collection_exists = qdrant_service.collection_exists(collection)
+
+        if not collection_exists:
+            if create_if_missing:
+                # Create the collection
+                qdrant_service.create_collection(collection)
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Collection '{collection}' does not exist. Set create_if_missing=true to create it."
+                )
+
+        results = []
+        successful_files = 0
+        failed_files = 0
+        max_size = 10 * 1024 * 1024  # 10MB per file
+
+        # Process each file
+        for file in files:
+            try:
+                # Validate file size
+                file_content = await file.read()
+                if len(file_content) > max_size:
+                    results.append(FileUploadResult(
+                        filename=file.filename,
+                        success=False,
+                        chunks_count=0,
+                        point_ids=[],
+                        error=f"File too large. Maximum size is {max_size / (1024*1024)}MB"
+                    ))
+                    failed_files += 1
+                    continue
+
+                # Process document into chunks
+                documents = document_service.process_document(
+                    filename=file.filename,
+                    file_content=file_content,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap
+                )
+
+                if not documents:
+                    results.append(FileUploadResult(
+                        filename=file.filename,
+                        success=False,
+                        chunks_count=0,
+                        point_ids=[],
+                        error="No content could be extracted from the document"
+                    ))
+                    failed_files += 1
+                    continue
+
+                # Generate embeddings for each chunk
+                texts = [doc.page_content for doc in documents]
+                metadatas = [doc.metadata for doc in documents]
+
+                embeddings = []
+                for text in texts:
+                    embedding = embedding_service.generate_embedding(text)
+                    embeddings.append(embedding)
+
+                # Upload to Qdrant
+                point_ids = qdrant_service.upload_points(
+                    collection_name=collection,
+                    texts=texts,
+                    embeddings=embeddings,
+                    metadatas=metadatas
+                )
+
+                results.append(FileUploadResult(
+                    filename=file.filename,
+                    success=True,
+                    chunks_count=len(point_ids),
+                    point_ids=point_ids
+                ))
+                successful_files += 1
+
+            except ValueError as e:
+                results.append(FileUploadResult(
+                    filename=file.filename,
+                    success=False,
+                    chunks_count=0,
+                    point_ids=[],
+                    error=str(e)
+                ))
+                failed_files += 1
+            except Exception as e:
+                print(f"Upload error for {file.filename}: {e}")
+                results.append(FileUploadResult(
+                    filename=file.filename,
+                    success=False,
+                    chunks_count=0,
+                    point_ids=[],
+                    error=str(e)
+                ))
+                failed_files += 1
+
+        total_chunks = sum(r.chunks_count for r in results if r.success)
+
+        return MultiUploadResponse(
+            success=successful_files > 0,
+            message=f"Processed {len(files)} files: {successful_files} successful, {failed_files} failed. Total chunks: {total_chunks}",
+            total_files=len(files),
+            successful_files=successful_files,
+            failed_files=failed_files,
+            results=results,
+            collection=collection
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Multi-upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Multi-upload failed: {str(e)}")
 
 
 @router.post("/collections/create", response_model=CreateCollectionResponse)

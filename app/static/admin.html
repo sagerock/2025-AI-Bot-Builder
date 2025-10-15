@@ -403,11 +403,11 @@
                 </div>
 
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Upload Document</label>
-                    <input type="file" id="document-file" accept=".pdf,.txt,.md,.html,.htm"
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Upload Document(s)</label>
+                    <input type="file" id="document-file" accept=".pdf,.txt,.md,.html,.htm" multiple
                         style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                     <div style="color: #666; font-size: 13px; margin-top: 5px;">
-                        Supported formats: PDF, TXT, MD, HTML (Max 10MB)
+                        Supported formats: PDF, TXT, MD, HTML (Max 10MB per file). Select multiple files to upload at once.
                     </div>
                 </div>
 
@@ -1366,7 +1366,7 @@
 
             // Validation
             if (!fileInput.files || fileInput.files.length === 0) {
-                showUploadStatus('Please select a file to upload', 'error');
+                showUploadStatus('Please select at least one file to upload', 'error');
                 return;
             }
 
@@ -1375,29 +1375,78 @@
                 return;
             }
 
-            const file = fileInput.files[0];
+            const files = Array.from(fileInput.files);
             const formData = new FormData();
-            formData.append('file', file);
+
+            // Add all files
+            files.forEach(file => {
+                formData.append('files', file);
+            });
+
             formData.append('collection', collectionSelect.value);
             formData.append('chunk_size', chunkSize);
             formData.append('chunk_overlap', chunkOverlap);
             formData.append('create_if_missing', 'false');
 
             try {
-                showUploadStatus('Processing document...', 'info');
+                const fileCount = files.length;
+                const fileNames = files.length > 3
+                    ? `${files.slice(0, 3).map(f => f.name).join(', ')}...`
+                    : files.map(f => f.name).join(', ');
 
-                const response = await fetch(`${API_BASE}/api/documents/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                showUploadStatus(`Processing ${fileCount} file${fileCount > 1 ? 's' : ''}: ${fileNames}`, 'info');
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Upload failed');
+                const endpoint = fileCount > 1
+                    ? `${API_BASE}/api/documents/upload-multiple`
+                    : `${API_BASE}/api/documents/upload`;
+
+                // Adjust formData for single file upload
+                if (fileCount === 1) {
+                    const singleFileFormData = new FormData();
+                    singleFileFormData.append('file', files[0]);
+                    singleFileFormData.append('collection', collectionSelect.value);
+                    singleFileFormData.append('chunk_size', chunkSize);
+                    singleFileFormData.append('chunk_overlap', chunkOverlap);
+                    singleFileFormData.append('create_if_missing', 'false');
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: singleFileFormData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Upload failed');
+                    }
+
+                    const result = await response.json();
+                    showUploadStatus(`Success! Uploaded ${result.chunks_count} chunks from ${files[0].name}`, 'success');
+                } else {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Upload failed');
+                    }
+
+                    const result = await response.json();
+
+                    // Build detailed status message
+                    let statusMsg = `Processed ${result.total_files} files: ${result.successful_files} successful, ${result.failed_files} failed.\n\n`;
+
+                    result.results.forEach(r => {
+                        if (r.success) {
+                            statusMsg += `✓ ${r.filename}: ${r.chunks_count} chunks\n`;
+                        } else {
+                            statusMsg += `✗ ${r.filename}: ${r.error}\n`;
+                        }
+                    });
+
+                    showUploadStatus(statusMsg, result.successful_files > 0 ? 'success' : 'error');
                 }
-
-                const result = await response.json();
-                showUploadStatus(`Success! Uploaded ${result.chunks_count} chunks from ${file.name}`, 'success');
 
                 // Clear file input
                 fileInput.value = '';
@@ -1414,6 +1463,7 @@
             const statusEl = document.getElementById('upload-status');
             statusEl.textContent = message;
             statusEl.style.display = 'block';
+            statusEl.style.whiteSpace = 'pre-wrap';
 
             if (type === 'success') {
                 statusEl.style.background = '#d4edda';
