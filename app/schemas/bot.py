@@ -10,7 +10,7 @@ class BotBase(BaseModel):
     model: str = Field(..., min_length=1)
     system_prompt: str = Field(..., min_length=1)
     temperature: int = Field(default=70, ge=0, le=100)
-    max_tokens: int = Field(default=1024, ge=1, le=4096)
+    max_tokens: int = Field(default=8192, ge=1, le=8192)
 
     # GPT-5 specific settings
     reasoning_effort: str = Field(default="medium", pattern="^(minimal|low|medium|high)$")
@@ -46,7 +46,7 @@ class BotUpdate(BaseModel):
     api_key_id: Optional[str] = None  # New system
     system_prompt: Optional[str] = None
     temperature: Optional[int] = Field(None, ge=0, le=100)
-    max_tokens: Optional[int] = Field(None, ge=1, le=4096)
+    max_tokens: Optional[int] = Field(None, ge=1, le=8192)
     reasoning_effort: Optional[str] = Field(None, pattern="^(minimal|low|medium|high)$")
     text_verbosity: Optional[str] = Field(None, pattern="^(low|medium|high)$")
     use_qdrant: Optional[bool] = None
