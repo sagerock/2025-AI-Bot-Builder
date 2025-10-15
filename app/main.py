@@ -42,6 +42,14 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 async def startup_event():
     """Initialize database on startup"""
     init_db()
+
+    # Run migrations (add any missing columns to existing tables)
+    try:
+        from migrate_db import run_migrations
+        run_migrations()
+    except Exception as e:
+        print(f"⚠️  Migration warning: {e}")
+
     print("✅ Database initialized")
     print(f"🚀 Server running at {settings.api_base_url}")
     print(f"📚 API Docs: {settings.api_base_url}/docs")
