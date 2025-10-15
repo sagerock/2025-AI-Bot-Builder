@@ -20,6 +20,7 @@ openai==1.97.0
 
 # Qdrant & Document Processing
 qdrant-client==1.14.2
+langchain>=0.3.0
 langchain-text-splitters>=0.3.0
 pypdf>=5.0.0
 beautifulsoup4>=4.12.0
