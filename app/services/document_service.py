@@ -3,7 +3,7 @@ import io
 from pathlib import Path
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
-import PyPDF2
+from pypdf import PdfReader
 from bs4 import BeautifulSoup
 import markdown
 
