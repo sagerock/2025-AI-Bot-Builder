@@ -1,18 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
+from typing import Optional
+import base64
 from app.database import get_db
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.bot_service import BotService
 from app.services.chat_service import ChatService
 from app.services.memory_service import MemoryService
+from app.services.document_service import document_service
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
+# Supported image formats
+IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+
+def is_image_file(filename: str) -> bool:
+    """Check if file is an image"""
+    import os
+    ext = os.path.splitext(filename.lower())[1]
+    return ext in IMAGE_FORMATS
+
+def get_image_mime_type(filename: str) -> str:
+    """Get MIME type for image"""
+    import os
+    ext = os.path.splitext(filename.lower())[1]
+    mime_types = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+    }
+    return mime_types.get(ext, 'image/jpeg')
+
 
 @router.post("/{bot_id}", response_model=ChatResponse)
-def chat(bot_id: str, request: ChatRequest, db: Session = Depends(get_db)):
+async def chat(
+    bot_id: str,
+    message: str = Form(...),
+    session_id: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db)
+):
     """
-    Send a message to a bot and get a response
+    Send a message to a bot and get a response, with optional file upload
     """
     # Get bot
     bot = BotService.get_bot(db, bot_id)
@@ -24,7 +55,7 @@ def chat(bot_id: str, request: ChatRequest, db: Session = Depends(get_db)):
 
     # Get or create conversation
     conversation, session_id = MemoryService.get_or_create_conversation(
-        db, bot_id, request.session_id
+        db, bot_id, session_id
     )
 
     # Get conversation history if memory is enabled
@@ -34,20 +65,68 @@ def chat(bot_id: str, request: ChatRequest, db: Session = Depends(get_db)):
             db, conversation.id, bot.memory_max_messages
         )
 
+    # Process uploaded file if present
+    file_context = None
+    image_data = None
+
+    if file and file.filename:
+        try:
+            # Read file content
+            file_content = await file.read()
+
+            # Validate file size (10MB limit)
+            max_size = 10 * 1024 * 1024
+            if len(file_content) > max_size:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File too large. Maximum size is 10MB"
+                )
+
+            # Check if it's an image
+            if is_image_file(file.filename):
+                # Encode image as base64
+                base64_image = base64.b64encode(file_content).decode('utf-8')
+                mime_type = get_image_mime_type(file.filename)
+                image_data = {
+                    'base64': base64_image,
+                    'mime_type': mime_type,
+                    'filename': file.filename
+                }
+            else:
+                # Extract text from document
+                extracted_text = document_service.extract_text(file.filename, file_content)
+
+                if extracted_text.strip():
+                    file_context = f"\n\n[Uploaded file: {file.filename}]\n{extracted_text[:100000]}"  # Limit to 100,000 chars
+                else:
+                    file_context = f"\n\n[Uploaded file: {file.filename}] (No text could be extracted)"
+        except Exception as e:
+            print(f"File processing error: {e}")
+            file_context = f"\n\n[Uploaded file: {file.filename}] (Error processing file: {str(e)})"
+
+    # Append file context to message if present (for documents)
+    enhanced_message = message
+    if file_context:
+        enhanced_message = message + file_context
+
     # Get RAG contexts if enabled
     rag_contexts = None
     if bot.use_qdrant and bot.qdrant_collection:
-        rag_contexts = ChatService.get_rag_contexts(bot, request.message)
+        rag_contexts = ChatService.get_rag_contexts(bot, message)
 
-    # Save user message
+    # Save user message (with file indicator if present)
+    user_message_display = message
+    if file and file.filename:
+        user_message_display = f"{message}\n[Attached: {file.filename}]"
+
     MemoryService.add_message(
-        db, conversation.id, "user", request.message
+        db, conversation.id, "user", user_message_display
     )
 
     # Generate response
     try:
         response_text = ChatService.chat(
-            bot, request.message, history, rag_contexts
+            bot, enhanced_message, history, rag_contexts, image_data
         )
     except Exception as e:
         import traceback

@@ -1,12 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.schemas.bot import BotCreate, BotUpdate, BotResponse
 from app.services.bot_service import BotService
 from app.models.bot import Bot
+from app import auth
 
 router = APIRouter(prefix="/api/bots", tags=["bots"])
+
+
+def require_auth_dependency(request: Request) -> str:
+    """Dependency to require authentication"""
+    return auth.require_auth(request)
 
 
 def enrich_bot_response(bot: Bot) -> BotResponse:
@@ -19,21 +25,21 @@ def enrich_bot_response(bot: Bot) -> BotResponse:
 
 
 @router.post("", response_model=BotResponse, status_code=201)
-def create_bot(bot_data: BotCreate, db: Session = Depends(get_db)):
+def create_bot(bot_data: BotCreate, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
     """Create a new bot"""
     bot = BotService.create_bot(db, bot_data)
     return enrich_bot_response(bot)
 
 
 @router.get("", response_model=List[BotResponse])
-def list_bots(include_inactive: bool = False, db: Session = Depends(get_db)):
+def list_bots(include_inactive: bool = False, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
     """List all bots"""
     bots = BotService.get_all_bots(db, include_inactive)
     return [enrich_bot_response(bot) for bot in bots]
 
 
 @router.get("/{bot_id}", response_model=BotResponse)
-def get_bot(bot_id: str, db: Session = Depends(get_db)):
+def get_bot(bot_id: str, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
     """Get a specific bot"""
     bot = BotService.get_bot(db, bot_id)
     if not bot:
@@ -42,7 +48,7 @@ def get_bot(bot_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/{bot_id}", response_model=BotResponse)
-def update_bot(bot_id: str, bot_data: BotUpdate, db: Session = Depends(get_db)):
+def update_bot(bot_id: str, bot_data: BotUpdate, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
     """Update a bot"""
     bot = BotService.update_bot(db, bot_id, bot_data)
     if not bot:
@@ -51,7 +57,7 @@ def update_bot(bot_id: str, bot_data: BotUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{bot_id}", status_code=204)
-def delete_bot(bot_id: str, hard_delete: bool = False, db: Session = Depends(get_db)):
+def delete_bot(bot_id: str, hard_delete: bool = False, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
     """Delete a bot (soft delete by default)"""
     if hard_delete:
         success = BotService.hard_delete_bot(db, bot_id)

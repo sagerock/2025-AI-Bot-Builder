@@ -24,6 +24,7 @@ class BotBase(BaseModel):
     # Memory
     enable_memory: bool = True
     memory_max_messages: int = Field(default=10, ge=1, le=50)
+    enable_suggestions: bool = False
 
     # Widget
     widget_title: Optional[str] = None
@@ -53,6 +54,7 @@ class BotUpdate(BaseModel):
     qdrant_top_k: Optional[int] = Field(None, ge=1, le=20)
     enable_memory: Optional[bool] = None
     memory_max_messages: Optional[int] = Field(None, ge=1, le=50)
+    enable_suggestions: Optional[bool] = None
     widget_title: Optional[str] = None
     widget_color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     widget_greeting: Optional[str] = None

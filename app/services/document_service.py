@@ -1,0 +1,193 @@
+from typing import List, Dict, Any, Optional
+import io
+from pathlib import Path
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.docstore.document import Document
+import PyPDF2
+from bs4 import BeautifulSoup
+import markdown
+
+
+class DocumentService:
+    """Service for processing and chunking documents for vector storage"""
+
+    SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm'}
+
+    @staticmethod
+    def extract_text_from_pdf(file_content: bytes) -> str:
+        """Extract text from PDF file"""
+        try:
+            pdf_file = io.BytesIO(file_content)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+
+            text_parts = []
+            for page_num, page in enumerate(pdf_reader.pages, 1):
+                text = page.extract_text()
+                if text.strip():
+                    text_parts.append(f"[Page {page_num}]\n{text}")
+
+            return "\n\n".join(text_parts)
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from PDF: {str(e)}")
+
+    @staticmethod
+    def extract_text_from_html(file_content: bytes) -> str:
+        """Extract text from HTML file"""
+        try:
+            html_text = file_content.decode('utf-8', errors='ignore')
+            soup = BeautifulSoup(html_text, 'html.parser')
+
+            # Remove script and style elements
+            for script in soup(["script", "style"]):
+                script.decompose()
+
+            # Get text
+            text = soup.get_text()
+
+            # Clean up whitespace
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text = '\n'.join(chunk for chunk in chunks if chunk)
+
+            return text
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from HTML: {str(e)}")
+
+    @staticmethod
+    def extract_text_from_markdown(file_content: bytes) -> str:
+        """Extract text from Markdown file"""
+        try:
+            md_text = file_content.decode('utf-8', errors='ignore')
+            # Convert markdown to HTML, then extract text
+            html = markdown.markdown(md_text)
+            soup = BeautifulSoup(html, 'html.parser')
+            return soup.get_text()
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from Markdown: {str(e)}")
+
+    @staticmethod
+    def extract_text_from_txt(file_content: bytes) -> str:
+        """Extract text from plain text file"""
+        try:
+            return file_content.decode('utf-8', errors='ignore')
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from TXT: {str(e)}")
+
+    @staticmethod
+    def extract_text(filename: str, file_content: bytes) -> str:
+        """
+        Extract text from a file based on its extension
+
+        Args:
+            filename: Name of the file
+            file_content: Binary content of the file
+
+        Returns:
+            Extracted text content
+        """
+        extension = Path(filename).suffix.lower()
+
+        if extension == '.pdf':
+            return DocumentService.extract_text_from_pdf(file_content)
+        elif extension in ['.html', '.htm']:
+            return DocumentService.extract_text_from_html(file_content)
+        elif extension == '.md':
+            return DocumentService.extract_text_from_markdown(file_content)
+        elif extension == '.txt':
+            return DocumentService.extract_text_from_txt(file_content)
+        else:
+            raise ValueError(f"Unsupported file type: {extension}")
+
+    @staticmethod
+    def chunk_text(
+        text: str,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> List[Document]:
+        """
+        Split text into chunks using RecursiveCharacterTextSplitter
+
+        Args:
+            text: Text to split
+            chunk_size: Maximum size of each chunk
+            chunk_overlap: Number of characters to overlap between chunks
+            metadata: Optional metadata to attach to each chunk
+
+        Returns:
+            List of Document objects with chunked text and metadata
+        """
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+
+        chunks = text_splitter.split_text(text)
+
+        documents = []
+        for i, chunk in enumerate(chunks):
+            doc_metadata = metadata.copy() if metadata else {}
+            doc_metadata['chunk_index'] = i
+            doc_metadata['chunk_count'] = len(chunks)
+
+            documents.append(Document(
+                page_content=chunk,
+                metadata=doc_metadata
+            ))
+
+        return documents
+
+    @staticmethod
+    def process_document(
+        filename: str,
+        file_content: bytes,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200
+    ) -> List[Document]:
+        """
+        Process a document: extract text and split into chunks
+
+        Args:
+            filename: Name of the file
+            file_content: Binary content of the file
+            chunk_size: Maximum size of each chunk
+            chunk_overlap: Number of characters to overlap between chunks
+
+        Returns:
+            List of Document objects with chunked text and metadata
+        """
+        # Validate file type
+        extension = Path(filename).suffix.lower()
+        if extension not in DocumentService.SUPPORTED_EXTENSIONS:
+            raise ValueError(
+                f"Unsupported file type: {extension}. "
+                f"Supported types: {', '.join(DocumentService.SUPPORTED_EXTENSIONS)}"
+            )
+
+        # Extract text
+        text = DocumentService.extract_text(filename, file_content)
+
+        if not text.strip():
+            raise ValueError("No text content found in document")
+
+        # Prepare metadata
+        metadata = {
+            'source': filename,
+            'file_type': extension[1:],  # Remove the dot
+        }
+
+        # Chunk text
+        documents = DocumentService.chunk_text(
+            text=text,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            metadata=metadata
+        )
+
+        return documents
+
+
+# Singleton instance
+document_service = DocumentService()

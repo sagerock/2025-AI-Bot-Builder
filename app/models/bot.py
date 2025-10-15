@@ -24,7 +24,7 @@ class Bot(Base):
     # Bot Behavior
     system_prompt = Column(Text, nullable=False)
     temperature = Column(Integer, default=70)  # 0-100 (will be converted to 0.0-1.0)
-    max_tokens = Column(Integer, default=1024)
+    max_tokens = Column(Integer, default=8192)
 
     # GPT-5 specific settings (for OpenAI Responses API)
     reasoning_effort = Column(String(20), default="medium")  # minimal, low, medium, high
@@ -38,6 +38,7 @@ class Bot(Base):
     # Session Configuration
     enable_memory = Column(Boolean, default=True)
     memory_max_messages = Column(Integer, default=10)  # Last N messages to remember
+    enable_suggestions = Column(Boolean, default=False)  # Show suggested follow-up questions
 
     # Widget Customization
     widget_title = Column(String(255), nullable=True)

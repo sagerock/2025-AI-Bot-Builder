@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from app.config import settings
 from app.database import init_db
-from app.api import bots, chat, api_keys
+from app.api import bots, chat, api_keys, qdrant, documents
+from app import auth
 import os
 
 # Initialize FastAPI app
@@ -27,6 +29,8 @@ app.add_middleware(
 app.include_router(bots.router)
 app.include_router(chat.router)
 app.include_router(api_keys.router)
+app.include_router(qdrant.router)
+app.include_router(documents.router)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -69,9 +73,64 @@ async def favicon():
     return {"status": "not found"}
 
 
+# Auth models
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serve login page"""
+    login_file = os.path.join(static_dir, "login.html")
+    if os.path.exists(login_file):
+        return FileResponse(login_file)
+    return HTMLResponse(content="<h1>Login page not found</h1>")
+
+
+@app.post("/auth/login")
+async def login(request: LoginRequest, response: Response):
+    """Handle login"""
+    if auth.verify_credentials(request.username, request.password):
+        # Create session
+        token = auth.create_session(request.username)
+
+        # Set session cookie
+        response = JSONResponse(content={"success": True, "username": request.username})
+        response.set_cookie(
+            key="session_token",
+            value=token,
+            httponly=True,
+            max_age=7 * 24 * 60 * 60,  # 7 days
+            samesite="lax"
+        )
+        return response
+    else:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid username or password"}
+        )
+
+
+@app.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Handle logout"""
+    token = auth.get_session_token(request)
+    if token:
+        auth.delete_session(token)
+
+    response = JSONResponse(content={"success": True})
+    response.delete_cookie("session_token")
+    return response
+
+
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_dashboard():
-    """Serve admin dashboard"""
+async def admin_dashboard(request: Request):
+    """Serve admin dashboard (requires authentication)"""
+    # Check if authenticated
+    if not auth.is_authenticated(request):
+        return RedirectResponse(url="/login?redirect=/admin", status_code=302)
+
     admin_file = os.path.join(static_dir, "admin.html")
     if os.path.exists(admin_file):
         return FileResponse(admin_file)

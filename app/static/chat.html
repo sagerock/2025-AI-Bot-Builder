@@ -87,7 +87,7 @@
             justify-content: center;
             flex-shrink: 0;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 20px;
         }
 
         .message.user .message-avatar {
@@ -106,6 +106,37 @@
             border-radius: 12px;
             line-height: 1.6;
             word-wrap: break-word;
+            position: relative;
+        }
+
+        .copy-button {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .message.assistant:hover .copy-button {
+            opacity: 1;
+        }
+
+        .copy-button:hover {
+            background: #f5f5f5;
+            border-color: var(--bot-color, #0066CC);
+        }
+
+        .copy-button:active {
+            transform: scale(0.95);
         }
 
         .message.user .message-content {
@@ -230,6 +261,48 @@
             }
         }
 
+        /* Suggestion styles */
+        .suggestions-container {
+            padding: 12px 16px;
+            margin: 8px 0 16px 48px;
+        }
+
+        .suggestions-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .suggestions-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .suggestion-button {
+            background: white;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s;
+            line-height: 1.4;
+        }
+
+        .suggestion-button:hover {
+            background: #f5f5f5;
+            border-color: var(--bot-color, #0066CC);
+            color: var(--bot-color, #0066CC);
+        }
+
+        .suggestion-button:active {
+            transform: scale(0.98);
+        }
+
         .input-container {
             padding: 20px;
             background: white;
@@ -238,16 +311,24 @@
             gap: 10px;
         }
 
-        .input-container input {
+        .input-container textarea {
             flex: 1;
             padding: 12px 16px;
             border: 1px solid #ddd;
-            border-radius: 24px;
+            border-radius: 16px;
             font-size: 14px;
             outline: none;
+            color: #333;
+            background: white;
+            font-family: inherit;
+            resize: none;
+            min-height: 46px;
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.5;
         }
 
-        .input-container input:focus {
+        .input-container textarea:focus {
             border-color: var(--bot-color, #0066CC);
         }
 
@@ -270,6 +351,54 @@
         .input-container button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        .file-upload-btn {
+            padding: 12px !important;
+            background: #f5f5f5 !important;
+            color: #666 !important;
+            border: 1px solid #ddd !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload-btn:hover {
+            background: #e8e8e8 !important;
+            color: #333 !important;
+        }
+
+        .file-upload-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .file-preview {
+            padding: 8px 12px;
+            background: #f0f7ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #0066cc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-preview button {
+            background: none !important;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 0 4px !important;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .file-preview button:hover {
+            color: #c00;
         }
 
         .error-message {
@@ -300,13 +429,27 @@
             </div>
         </div>
 
+        <div id="file-preview-container" style="padding: 0 20px; display: none;"></div>
+
         <div class="input-container">
             <input
-                type="text"
+                type="file"
+                id="file-input"
+                accept=".pdf,.txt,.md,.html,.htm,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp,image/*"
+                style="display: none;"
+                onchange="handleFileSelect()"
+            />
+            <button class="file-upload-btn" onclick="document.getElementById('file-input').click()" title="Attach file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+            </button>
+            <textarea
                 id="message-input"
                 placeholder="Type your message..."
                 autocomplete="off"
-            />
+                rows="1"
+            ></textarea>
             <button id="send-btn" onclick="sendMessage()">Send</button>
         </div>
     </div>
@@ -391,19 +534,53 @@
                 greeting.remove();
             }
 
+            // Remove any previous suggestions before adding new message
+            const oldSuggestions = document.querySelector('.suggestions-container');
+            if (oldSuggestions) {
+                oldSuggestions.remove();
+            }
+
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
 
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.textContent = role === 'user' ? 'U' : 'AI';
+            avatar.textContent = role === 'user' ? '👤' : '🤖';
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
+            // Parse suggestions for assistant messages
+            let suggestions = [];
+            let mainContent = content;
+
+            if (role === 'assistant' && content.includes('---SUGGESTIONS---')) {
+                const parts = content.split('---SUGGESTIONS---');
+                mainContent = parts[0].trim();
+                const suggestionsText = parts[1].trim();
+                suggestions = suggestionsText.split('\n').filter(s => s.trim()).map(s => s.trim());
+            }
+
             // Parse markdown for assistant messages, plain text for user messages
             if (role === 'assistant') {
-                contentDiv.innerHTML = parseMarkdown(content);
+                contentDiv.innerHTML = parseMarkdown(mainContent);
+
+                // Add copy button for assistant messages
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.innerHTML = '📋 Copy';
+                copyButton.onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(mainContent).then(() => {
+                        copyButton.innerHTML = '✓ Copied';
+                        setTimeout(() => {
+                            copyButton.innerHTML = '📋 Copy';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy:', err);
+                    });
+                };
+                contentDiv.appendChild(copyButton);
             } else {
                 contentDiv.textContent = content;
             }
@@ -412,6 +589,31 @@
             messageDiv.appendChild(contentDiv);
 
             messagesContainer.appendChild(messageDiv);
+
+            // Add suggestions if any
+            if (suggestions.length > 0) {
+                const suggestionsContainer = document.createElement('div');
+                suggestionsContainer.className = 'suggestions-container';
+                suggestionsContainer.innerHTML = '<div class="suggestions-label">💡 Suggested questions:</div>';
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'suggestions-buttons';
+
+                suggestions.forEach(suggestion => {
+                    const button = document.createElement('button');
+                    button.className = 'suggestion-button';
+                    button.textContent = suggestion;
+                    button.onclick = () => {
+                        document.getElementById('message-input').value = suggestion;
+                        sendMessage();
+                    };
+                    buttonsDiv.appendChild(button);
+                });
+
+                suggestionsContainer.appendChild(buttonsDiv);
+                messagesContainer.appendChild(suggestionsContainer);
+            }
+
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
@@ -424,7 +626,7 @@
                 typingIndicator.id = 'typing-indicator';
                 typingIndicator.className = 'message assistant';
                 typingIndicator.innerHTML = `
-                    <div class="message-avatar">AI</div>
+                    <div class="message-avatar">🤖</div>
                     <div class="typing-indicator" style="display: block;">
                         <span></span><span></span><span></span>
                     </div>
@@ -435,6 +637,64 @@
             }
 
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        let selectedFile = null;
+
+        function handleFileSelect() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (file) {
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File too large. Maximum size is 10MB.');
+                    fileInput.value = '';
+                    return;
+                }
+
+                selectedFile = file;
+                showFilePreview(file.name);
+            }
+        }
+
+        function showFilePreview(filename) {
+            const container = document.getElementById('file-preview-container');
+            container.style.display = 'block';
+
+            // Check if it's an image
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+
+            if (isImage && selectedFile) {
+                // Show image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    container.innerHTML = `
+                        <div class="file-preview" style="flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px;">
+                            <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                                <span>🖼️ ${filename}</span>
+                                <button onclick="clearFile()" title="Remove file">&times;</button>
+                            </div>
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 4px; border: 1px solid #ddd;">
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(selectedFile);
+            } else {
+                // Show file icon for documents
+                container.innerHTML = `
+                    <div class="file-preview">
+                        <span>📎 ${filename}</span>
+                        <button onclick="clearFile()" title="Remove file">&times;</button>
+                    </div>
+                `;
+            }
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-preview-container').style.display = 'none';
         }
 
         async function sendMessage() {
@@ -449,21 +709,31 @@
             input.disabled = true;
             sendBtn.disabled = true;
 
-            // Add user message
-            addMessage('user', message);
+            // Add user message (with file indicator if present)
+            let displayMessage = message;
+            if (selectedFile) {
+                displayMessage = `${message}\n[Attached: ${selectedFile.name}]`;
+            }
+            addMessage('user', displayMessage);
             input.value = '';
 
             // Show typing indicator
             showTyping(true);
 
             try {
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('message', message);
+                if (sessionId) {
+                    formData.append('session_id', sessionId);
+                }
+                if (selectedFile) {
+                    formData.append('file', selectedFile);
+                }
+
                 const response = await fetch(`${API_BASE}/api/chat/${botId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: message,
-                        session_id: sessionId
-                    })
+                    body: formData
                 });
 
                 if (!response.ok) throw new Error('Failed to get response');
@@ -479,6 +749,11 @@
                 // Hide typing and show response
                 showTyping(false);
                 addMessage('assistant', data.response);
+
+                // Clear file after successful send
+                if (selectedFile) {
+                    clearFile();
+                }
             } catch (error) {
                 showTyping(false);
                 addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
@@ -491,8 +766,15 @@
             }
         }
 
-        // Enter key to send
-        document.getElementById('message-input').addEventListener('keypress', (e) => {
+        // Auto-resize textarea as user types
+        const textarea = document.getElementById('message-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Enter key to send (Shift+Enter for new line)
+        textarea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();

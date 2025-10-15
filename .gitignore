@@ -33,6 +33,11 @@ wheels/
 *.sqlite3
 data/
 
+# Backup files (use import/export scripts instead)
+*_backup.json
+bot_export_*.json
+railway_upload.json
+
 # IDE
 .vscode/
 .idea/
