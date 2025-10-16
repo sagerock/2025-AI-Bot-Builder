@@ -380,6 +380,7 @@
             <button class="tab active" onclick="switchTab('bots')">Bots</button>
             <button class="tab" onclick="switchTab('api-keys')">API Keys</button>
             <button class="tab" onclick="switchTab('qdrant')">Qdrant</button>
+            <button class="tab" onclick="switchTab('analytics')">Analytics</button>
         </div>
 
         <div id="error-message" class="error" style="display: none;"></div>
@@ -456,6 +457,33 @@
             <div style="background: white; padding: 20px; border-radius: 8px;">
                 <h3 style="margin-bottom: 15px;">Available Collections</h3>
                 <div id="collections-container" style="display: grid; gap: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <!-- Platform Overview -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Platform Overview</h3>
+                <div id="platform-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Activity Timeline (Last 30 Days)</h3>
+                <div id="timeline-chart" style="height: 300px;">
+                    <!-- Chart will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Bot Analytics -->
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px;">Bot Analytics</h3>
+                <div id="bot-analytics-container">
+                    <!-- Bot analytics table will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -1911,6 +1939,177 @@
                 loadBots();
             } else if (tabName === 'api-keys') {
                 loadApiKeys();
+            } else if (tabName === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // ===== Analytics Functions =====
+        async function loadAnalytics() {
+            await Promise.all([
+                loadPlatformStats(),
+                loadBotAnalytics(),
+                loadTimeline()
+            ]);
+        }
+
+        async function loadPlatformStats() {
+            const container = document.getElementById('platform-stats');
+            container.innerHTML = '<div style="color: #666; padding: 20px;">Loading platform stats...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/analytics/platform`);
+                if (!response.ok) throw new Error('Failed to load platform stats');
+
+                const data = await response.json();
+
+                container.innerHTML = `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white;">
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Total Conversations</div>
+                        <div style="font-size: 32px; font-weight: bold;">${data.total_conversations.toLocaleString()}</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
+                            ${data.conversations_today} today, ${data.conversations_this_week} this week
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 8px; color: white;">
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Total Messages</div>
+                        <div style="font-size: 32px; font-weight: bold;">${data.total_messages.toLocaleString()}</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
+                            ${data.messages_today} today, ${data.messages_this_week} this week
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 8px; color: white;">
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Active Bots</div>
+                        <div style="font-size: 32px; font-weight: bold;">${data.active_bots} / ${data.total_bots}</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
+                            ${data.inactive_bots} inactive
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 20px; border-radius: 8px; color: white;">
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 5px;">Avg Messages/Conv</div>
+                        <div style="font-size: 32px; font-weight: bold;">${data.avg_messages_per_conversation}</div>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
+                            ${data.unique_users} unique users
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div style="color: #dc3545; padding: 20px;">Failed to load platform stats: ${error.message}</div>`;
+            }
+        }
+
+        async function loadBotAnalytics() {
+            const container = document.getElementById('bot-analytics-container');
+            container.innerHTML = '<div style="color: #666; padding: 20px;">Loading bot analytics...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/analytics/bots`);
+                if (!response.ok) throw new Error('Failed to load bot analytics');
+
+                const data = await response.json();
+
+                if (data.bots.length === 0) {
+                    container.innerHTML = '<div style="color: #666; padding: 20px;">No bot activity yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Bot Name</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">Provider</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">Conversations</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">Messages</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">Avg Msg/Conv</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">RAG Usage</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Last Used</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bot-analytics-tbody"></tbody>
+                    </table>
+                `;
+
+                const tbody = document.getElementById('bot-analytics-tbody');
+
+                data.bots.forEach(bot => {
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #e0e0e0';
+
+                    const providerBadge = bot.provider === 'anthropic'
+                        ? '<span style="background: #674ea7; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">CLAUDE</span>'
+                        : '<span style="background: #10a37f; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">OPENAI</span>';
+
+                    const ragBadge = bot.rag_enabled
+                        ? `<span style="color: #28a745;">${bot.rag_usage_percentage}%</span>`
+                        : '<span style="color: #999;">N/A</span>';
+
+                    const lastUsed = bot.last_used
+                        ? new Date(bot.last_used).toLocaleString()
+                        : 'Never';
+
+                    row.innerHTML = `
+                        <td style="padding: 12px; font-weight: 500;">${bot.bot_name}</td>
+                        <td style="padding: 12px; text-align: center;">${providerBadge}</td>
+                        <td style="padding: 12px; text-align: center;">${bot.total_conversations.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: center;">${bot.total_messages.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: center;">${bot.avg_messages_per_conversation}</td>
+                        <td style="padding: 12px; text-align: center;">${ragBadge}</td>
+                        <td style="padding: 12px; font-size: 12px; color: #666;">${lastUsed}</td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                container.innerHTML = `<div style="color: #dc3545; padding: 20px;">Failed to load bot analytics: ${error.message}</div>`;
+            }
+        }
+
+        async function loadTimeline() {
+            const container = document.getElementById('timeline-chart');
+            container.innerHTML = '<div style="color: #666; padding: 20px; text-align: center;">Loading activity timeline...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/analytics/timeline?days=30`);
+                if (!response.ok) throw new Error('Failed to load timeline');
+
+                const data = await response.json();
+
+                // Simple ASCII chart
+                const maxMessages = Math.max(...data.timeline.map(d => d.messages), 1);
+                const maxConversations = Math.max(...data.timeline.map(d => d.conversations), 1);
+
+                let chartHTML = '<div style="font-family: monospace; font-size: 11px; overflow-x: auto;">';
+                chartHTML += '<div style="margin-bottom: 10px; display: flex; gap: 20px;"><span style="color: #667eea;">■ Messages</span><span style="color: #43e97b;">■ Conversations</span></div>';
+
+                // Show last 14 days for readability
+                const recentData = data.timeline.slice(-14);
+
+                recentData.forEach(day => {
+                    const date = new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const messageBar = Math.round((day.messages / maxMessages) * 40);
+                    const convBar = Math.round((day.conversations / maxConversations) * 40);
+
+                    chartHTML += `
+                        <div style="margin-bottom: 3px;">
+                            <span style="display: inline-block; width: 50px; text-align: right; margin-right: 10px; color: #666;">${date}</span>
+                            <span style="background: #667eea; display: inline-block; height: 12px; width: ${messageBar * 4}px; margin-right: 5px;"></span>
+                            <span style="color: #667eea;">${day.messages}</span>
+                            <br>
+                            <span style="display: inline-block; width: 50px; margin-right: 10px;"></span>
+                            <span style="background: #43e97b; display: inline-block; height: 12px; width: ${convBar * 4}px; margin-right: 5px;"></span>
+                            <span style="color: #43e97b;">${day.conversations}</span>
+                        </div>
+                    `;
+                });
+
+                chartHTML += '</div>';
+                container.innerHTML = chartHTML;
+            } catch (error) {
+                container.innerHTML = `<div style="color: #dc3545; padding: 20px;">Failed to load timeline: ${error.message}</div>`;
             }
         }
 

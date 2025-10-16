@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.config import settings
 from app.database import init_db
-from app.api import bots, chat, api_keys, qdrant, documents
+from app.api import bots, chat, api_keys, qdrant, documents, auth_token, webhooks, analytics
 from app import auth
 import os
 
@@ -26,11 +26,14 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth_token.router)
+app.include_router(webhooks.router)
 app.include_router(bots.router)
 app.include_router(chat.router)
 app.include_router(api_keys.router)
 app.include_router(qdrant.router)
 app.include_router(documents.router)
+app.include_router(analytics.router)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
