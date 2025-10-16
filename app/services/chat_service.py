@@ -5,20 +5,26 @@ from app.models.bot import Bot
 from app.schemas.chat import ChatMessage
 from app.services.qdrant_service import qdrant_service
 from app.services.embedding_service import embedding_service
+from app.config import settings
 
 
 class ChatService:
     @staticmethod
     def get_bot_api_key(bot: Bot) -> str:
-        """Get the bot's API key from either the relationship or legacy field"""
+        """Get the bot's API key from either the relationship, legacy field, or default settings"""
         # Try to get from API key relationship first (new system)
         if bot.api_key_id and bot.api_key_ref:
             return bot.api_key_ref.api_key
         # Fall back to legacy field
         elif bot.api_key:
             return bot.api_key
+        # Fall back to default keys based on provider
+        elif bot.provider == "anthropic" and settings.default_anthropic_api_key:
+            return settings.default_anthropic_api_key
+        elif bot.provider == "openai" and settings.default_openai_api_key:
+            return settings.default_openai_api_key
         else:
-            raise ValueError("No API key configured for this bot")
+            raise ValueError(f"No API key configured for this bot. Please set an API key for the bot or configure DEFAULT_{bot.provider.upper()}_API_KEY in environment variables.")
 
     @staticmethod
     def build_system_prompt(bot: Bot) -> str:
