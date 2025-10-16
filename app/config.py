@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = "your-secret-key-change-this-in-production"
     admin_password: str = "changeme"
+    jwt_secret_key: str = "jwt-secret-key-change-this-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_hours: int = 24
+
+    # Firebase (for token validation from Engagement Hub)
+    firebase_project_id: Optional[str] = None
+    firebase_credentials_path: Optional[str] = None
 
     # API
     api_base_url: str = "http://localhost:8000"

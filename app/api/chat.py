@@ -8,6 +8,8 @@ from app.services.bot_service import BotService
 from app.services.chat_service import ChatService
 from app.services.memory_service import MemoryService
 from app.services.document_service import document_service
+from app.services.webhook_service import WebhookService
+from app.utils.jwt_auth import get_current_user_from_token
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -40,11 +42,23 @@ async def chat(
     message: str = Form(...),
     session_id: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    authorization: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Send a message to a bot and get a response, with optional file upload
     """
+    # Extract user info from token if provided
+    user_info = None
+    if authorization:
+        try:
+            user_info = await get_current_user_from_token(authorization)
+        except:
+            pass  # Token auth is optional for chat
+
+    user_id = user_info.get("sub") if user_info else None
+    user_email = user_info.get("email") if user_info else None
+
     # Get bot
     bot = BotService.get_bot(db, bot_id)
     if not bot:
@@ -57,6 +71,20 @@ async def chat(
     conversation, session_id = MemoryService.get_or_create_conversation(
         db, bot_id, session_id
     )
+
+    # Fire webhook for conversation_started if this is a new conversation
+    is_new_conversation = not session_id or conversation.id == session_id
+    if is_new_conversation:
+        WebhookService.trigger_event(
+            db=db,
+            event="conversation_started",
+            bot_id=bot_id,
+            bot_name=bot.name,
+            session_id=session_id,
+            user_id=user_id,
+            user_email=user_email,
+            data={"initial_message": message[:100]}
+        )
 
     # Get conversation history if memory is enabled
     history = []
@@ -123,6 +151,22 @@ async def chat(
         db, conversation.id, "user", user_message_display
     )
 
+    # Fire webhook for message_sent
+    WebhookService.trigger_event(
+        db=db,
+        event="message_sent",
+        bot_id=bot_id,
+        bot_name=bot.name,
+        session_id=session_id,
+        user_id=user_id,
+        user_email=user_email,
+        data={
+            "message": message,
+            "has_file": bool(file and file.filename),
+            "file_name": file.filename if file else None
+        }
+    )
+
     # Generate response
     try:
         response_text = ChatService.chat(
@@ -143,6 +187,22 @@ async def chat(
         rag_context="\n".join(rag_contexts) if rag_contexts else None
     )
 
+    # Fire webhook for message_received
+    WebhookService.trigger_event(
+        db=db,
+        event="message_received",
+        bot_id=bot_id,
+        bot_name=bot.name,
+        session_id=session_id,
+        user_id=user_id,
+        user_email=user_email,
+        data={
+            "user_message": message,
+            "bot_response": response_text,
+            "has_rag_context": bool(rag_contexts)
+        }
+    )
+
     return ChatResponse(
         response=response_text,
         session_id=session_id,
@@ -153,7 +213,24 @@ async def chat(
 @router.delete("/{bot_id}/session/{session_id}", status_code=204)
 def clear_session(bot_id: str, session_id: str, db: Session = Depends(get_db)):
     """Clear conversation history for a session"""
+    # Get bot info for webhook
+    bot = BotService.get_bot(db, bot_id)
+
     success = MemoryService.clear_conversation(db, session_id, bot_id)
     if not success:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    # Fire webhook for conversation_ended
+    if bot:
+        WebhookService.trigger_event(
+            db=db,
+            event="conversation_ended",
+            bot_id=bot_id,
+            bot_name=bot.name,
+            session_id=session_id,
+            user_id=None,
+            user_email=None,
+            data={"reason": "session_cleared"}
+        )
+
     return None

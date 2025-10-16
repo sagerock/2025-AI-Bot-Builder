@@ -16,6 +16,12 @@ def column_exists(table_name: str, column_name: str) -> bool:
     return column_name in columns
 
 
+def table_exists(table_name: str) -> bool:
+    """Check if a table exists"""
+    inspector = inspect(engine)
+    return table_name in inspector.get_table_names()
+
+
 def run_migrations():
     """Run database migrations"""
     print(f"🔄 Running database migrations...")
@@ -59,6 +65,33 @@ def run_migrations():
             print("     ✅ Done")
         else:
             print("  ⏭️  text_verbosity column already exists")
+
+        # Migration: Create webhooks table
+        if not table_exists('webhooks'):
+            print("  ➕ Creating webhooks table...")
+            conn.execute(text("""
+                CREATE TABLE webhooks (
+                    id VARCHAR PRIMARY KEY,
+                    bot_id VARCHAR NOT NULL,
+                    url VARCHAR NOT NULL,
+                    events TEXT NOT NULL,
+                    secret VARCHAR,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    description VARCHAR,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    total_calls VARCHAR DEFAULT '0',
+                    last_called_at TIMESTAMP,
+                    last_status_code VARCHAR,
+                    last_error TEXT,
+                    FOREIGN KEY (bot_id) REFERENCES bots(id) ON DELETE CASCADE
+                )
+            """))
+            conn.commit()
+            migrations_run += 1
+            print("     ✅ Done")
+        else:
+            print("  ⏭️  webhooks table already exists")
 
     if migrations_run > 0:
         print(f"\n✅ Successfully ran {migrations_run} migration(s)")
