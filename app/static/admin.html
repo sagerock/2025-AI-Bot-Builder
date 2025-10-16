@@ -274,6 +274,28 @@
             display: block;
         }
 
+        .view-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s;
+            margin-right: 10px;
+        }
+
+        .view-tab:hover {
+            color: #0066CC;
+        }
+
+        .view-tab.active {
+            color: #0066CC;
+            border-bottom-color: #0066CC;
+        }
+
         /* API Key specific styles */
         .api-key-grid {
             display: grid;
@@ -475,11 +497,30 @@
                 <h2 id="points-modal-title">Collection Documents</h2>
                 <button class="btn btn-secondary" onclick="closePointsModal()">Close</button>
             </div>
-            <div id="points-container" style="max-height: 60vh; overflow-y: auto;"></div>
-            <div style="margin-top: 20px; text-align: center;">
-                <button id="load-more-points" class="btn btn-secondary" style="display: none;">
-                    Load More
+
+            <!-- Tab Navigation -->
+            <div style="border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
+                <button id="documents-view-tab" class="view-tab active" onclick="switchViewTab('documents')">
+                    Documents
                 </button>
+                <button id="chunks-view-tab" class="view-tab" onclick="switchViewTab('chunks')">
+                    Chunks
+                </button>
+            </div>
+
+            <!-- Documents View -->
+            <div id="documents-view" style="display: block;">
+                <div id="documents-container" style="max-height: 60vh; overflow-y: auto;"></div>
+            </div>
+
+            <!-- Chunks View -->
+            <div id="chunks-view" style="display: none;">
+                <div id="points-container" style="max-height: 60vh; overflow-y: auto;"></div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="load-more-points" class="btn btn-secondary" style="display: none;">
+                        Load More
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1593,16 +1634,146 @@
         // Points/Documents Viewing Functions
         let currentCollection = null;
         let currentOffset = null;
+        let currentView = 'documents';  // 'documents' or 'chunks'
 
         async function viewCollectionPoints(collectionName) {
             currentCollection = collectionName;
             currentOffset = null;
+            currentView = 'documents';
 
-            document.getElementById('points-modal-title').textContent = `Documents in ${collectionName}`;
+            document.getElementById('points-modal-title').textContent = `${collectionName}`;
             document.getElementById('points-modal').style.display = 'block';
-            document.getElementById('points-container').innerHTML = '<div style="color: #666; padding: 20px;">Loading documents...</div>';
 
-            await loadPoints();
+            // Reset to documents view
+            switchViewTab('documents');
+        }
+
+        function switchViewTab(view) {
+            currentView = view;
+
+            // Update tab styling
+            document.getElementById('documents-view-tab').classList.toggle('active', view === 'documents');
+            document.getElementById('chunks-view-tab').classList.toggle('active', view === 'chunks');
+
+            // Update view visibility
+            document.getElementById('documents-view').style.display = view === 'documents' ? 'block' : 'none';
+            document.getElementById('chunks-view').style.display = view === 'chunks' ? 'block' : 'none';
+
+            // Load appropriate content
+            if (view === 'documents') {
+                loadDocuments();
+            } else {
+                currentOffset = null;
+                loadPoints();
+            }
+        }
+
+        async function loadDocuments() {
+            const container = document.getElementById('documents-container');
+            container.innerHTML = '<div style="color: #666; padding: 20px;">Loading documents...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/documents/collections/${encodeURIComponent(currentCollection)}/documents`);
+                if (!response.ok) throw new Error('Failed to load documents');
+
+                const data = await response.json();
+                displayDocuments(data.documents);
+            } catch (error) {
+                container.innerHTML = `<div style="color: #dc3545; padding: 20px;">Failed to load documents: ${error.message}</div>`;
+            }
+        }
+
+        function displayDocuments(documents) {
+            const container = document.getElementById('documents-container');
+
+            if (documents.length === 0) {
+                container.innerHTML = '<div style="color: #666; padding: 20px;">No documents found in this collection.</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Filename</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Type</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600;">Chunks</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Uploaded</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documents-tbody"></tbody>
+                </table>
+            `;
+
+            const tbody = document.getElementById('documents-tbody');
+
+            documents.forEach(doc => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #e0e0e0';
+
+                const uploadDate = doc.uploaded_at
+                    ? new Date(doc.uploaded_at).toLocaleString()
+                    : 'Unknown';
+
+                row.innerHTML = `
+                    <td style="padding: 12px; word-break: break-word;">${doc.filename}</td>
+                    <td style="padding: 12px;">
+                        <span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
+                            ${doc.file_type}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: center;">${doc.chunk_count}</td>
+                    <td style="padding: 12px; font-size: 12px; color: #666;">${uploadDate}</td>
+                    <td style="padding: 12px; text-align: right;">
+                        <button class="btn btn-secondary" onclick="viewDocumentChunks('${doc.filename.replace(/'/g, "\\'")}')"
+                            style="font-size: 11px; padding: 4px 8px; margin-right: 5px;">
+                            View Chunks
+                        </button>
+                        <button class="btn btn-secondary" onclick="deleteDocument('${doc.filename.replace(/'/g, "\\'")}')"
+                            style="font-size: 11px; padding: 4px 8px; background: #dc3545; border-color: #dc3545;">
+                            Delete
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function viewDocumentChunks(filename) {
+            // Switch to chunks view and filter by this document
+            switchViewTab('chunks');
+            // TODO: Could add filtering here in the future
+        }
+
+        async function deleteDocument(filename) {
+            if (!confirm(`Are you sure you want to delete "${filename}" and all its chunks?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/api/documents/collections/${encodeURIComponent(currentCollection)}/documents/${encodeURIComponent(filename)}`,
+                    { method: 'DELETE' }
+                );
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete document');
+                }
+
+                showSuccess('Document deleted successfully');
+
+                // Reload documents view
+                await loadDocuments();
+
+                // Reload collections to update point count
+                await loadCollections();
+                await loadCollectionsDropdown();
+            } catch (error) {
+                showError('Failed to delete document: ' + error.message);
+            }
         }
 
         async function loadPoints() {

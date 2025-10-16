@@ -447,3 +447,108 @@ async def search_by_metadata(
             status_code=500,
             detail=f"Search failed: {str(e)}"
         )
+
+
+@router.get("/collections/{collection_name}/documents")
+async def list_documents(
+    collection_name: str,
+    username: str = Depends(require_auth_dependency)
+):
+    """Get list of unique documents in a collection (grouped by source filename)"""
+    try:
+        # Get all points from the collection
+        all_points = []
+        offset = None
+
+        while True:
+            result = qdrant_service.scroll_points(
+                collection_name=collection_name,
+                limit=100,
+                offset=offset,
+                with_vectors=False
+            )
+            all_points.extend(result["points"])
+
+            if not result["next_offset"]:
+                break
+            offset = result["next_offset"]
+
+        # Group by source filename
+        documents_map = {}
+        for point in all_points:
+            source = point["payload"].get("source", "Unknown")
+
+            if source not in documents_map:
+                documents_map[source] = {
+                    "filename": source,
+                    "file_type": point["payload"].get("file_type", "unknown"),
+                    "uploaded_at": point["payload"].get("uploaded_at"),
+                    "chunk_count": 0,
+                    "point_ids": []
+                }
+
+            documents_map[source]["chunk_count"] += 1
+            documents_map[source]["point_ids"].append(point["id"])
+
+        # Convert to list and sort by upload date (newest first)
+        documents = list(documents_map.values())
+        documents.sort(key=lambda x: x.get("uploaded_at") or "", reverse=True)
+
+        return {
+            "documents": documents,
+            "total_documents": len(documents),
+            "total_chunks": len(all_points)
+        }
+
+    except Exception as e:
+        print(f"List documents error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list documents: {str(e)}"
+        )
+
+
+@router.delete("/collections/{collection_name}/documents/{filename}")
+async def delete_document(
+    collection_name: str,
+    filename: str,
+    username: str = Depends(require_auth_dependency)
+):
+    """Delete all chunks of a specific document by filename"""
+    try:
+        # Get all points for this document
+        points = qdrant_service.search_points_by_metadata(
+            collection_name=collection_name,
+            metadata_key="source",
+            metadata_value=filename,
+            limit=10000  # High limit to get all chunks
+        )
+
+        if not points:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No chunks found for document '{filename}'"
+            )
+
+        # Extract point IDs
+        point_ids = [p["id"] for p in points]
+
+        # Delete all points
+        qdrant_service.delete_points(
+            collection_name=collection_name,
+            point_ids=point_ids
+        )
+
+        return DeleteResponse(
+            success=True,
+            message=f"Successfully deleted document '{filename}' ({len(point_ids)} chunks)"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Delete document error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete document: {str(e)}"
+        )

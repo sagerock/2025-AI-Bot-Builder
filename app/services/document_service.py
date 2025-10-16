@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 import io
 from pathlib import Path
+from datetime import datetime
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from pypdf import PdfReader
@@ -176,6 +177,7 @@ class DocumentService:
         metadata = {
             'source': filename,
             'file_type': extension[1:],  # Remove the dot
+            'uploaded_at': datetime.utcnow().isoformat(),
         }
 
         # Chunk text
