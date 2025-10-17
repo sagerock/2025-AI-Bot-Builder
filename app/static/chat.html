@@ -175,7 +175,8 @@
         }
 
         .message-content li {
-            margin: 4px 0;
+            margin: 2px 0;
+            line-height: 1.4;
         }
 
         .message-content strong {
@@ -481,13 +482,61 @@
             // Simple markdown parser for common formatting
             let html = text;
 
-            // Escape HTML first
+            // First, preserve code blocks to avoid parsing markdown inside them
+            const codeBlocks = [];
+            html = html.replace(/```([^`]+)```/g, (match, code) => {
+                codeBlocks.push(code);
+                return `__CODEBLOCK_${codeBlocks.length - 1}__`;
+            });
+
+            // Escape HTML tags but preserve <br> tags
+            html = html.replace(/<br\s*\/?>/gi, '__BR_TAG__');
             html = html.replace(/&/g, '&amp;')
                       .replace(/</g, '&lt;')
                       .replace(/>/g, '&gt;');
+            html = html.replace(/__BR_TAG__/g, '<br>');
 
-            // Code blocks (```code```)
-            html = html.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+            // Parse tables (markdown format with | separators)
+            html = html.replace(/^\|(.+)\|$/gim, (match, content) => {
+                // Check if this is a separator line (|---|---|)
+                if (/^[\s\-:|]+$/.test(content)) {
+                    return '__TABLE_SEPARATOR__';
+                }
+                // Parse table cells
+                const cells = content.split('|').map(cell => cell.trim()).filter(cell => cell);
+                return '__TABLE_ROW__' + cells.map(cell => `<td>${cell}</td>`).join('') + '__TABLE_ROW_END__';
+            });
+
+            // Group table rows into tables
+            html = html.replace(/((?:__TABLE_ROW__.+?__TABLE_ROW_END__\n?)+)/g, (match) => {
+                const rows = match.split('__TABLE_ROW_END__').filter(r => r.trim());
+                let isFirstRow = true;
+                let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;">';
+
+                rows.forEach(row => {
+                    if (row === '__TABLE_SEPARATOR__') {
+                        isFirstRow = false;
+                        return;
+                    }
+                    const cleanRow = row.replace('__TABLE_ROW__', '');
+                    if (cleanRow.trim()) {
+                        if (isFirstRow) {
+                            tableHtml += '<thead><tr>' + cleanRow.replace(/<td>/g, '<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; font-weight: 600; text-align: left;">').replace(/<\/td>/g, '</th>') + '</tr></thead><tbody>';
+                            isFirstRow = false;
+                        } else {
+                            tableHtml += '<tr>' + cleanRow.replace(/<td>/g, '<td style="border: 1px solid #ddd; padding: 8px;">') + '</tr>';
+                        }
+                    }
+                });
+
+                tableHtml += '</tbody></table>';
+                return tableHtml;
+            });
+
+            // Restore code blocks
+            codeBlocks.forEach((code, i) => {
+                html = html.replace(`__CODEBLOCK_${i}__`, `<pre><code>${code}</code></pre>`);
+            });
 
             // Inline code (`code`)
             html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -519,7 +568,7 @@
             html = html.replace(/\n/g, '<br>');
 
             // Wrap in paragraph if not already wrapped
-            if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<pre')) {
+            if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<pre') && !html.startsWith('<table')) {
                 html = '<p>' + html + '</p>';
             }
 
