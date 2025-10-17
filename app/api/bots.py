@@ -38,9 +38,27 @@ def list_bots(include_inactive: bool = False, db: Session = Depends(get_db), use
     return [enrich_bot_response(bot) for bot in bots]
 
 
+@router.get("/{bot_id}/public")
+def get_bot_public(bot_id: str, db: Session = Depends(get_db)):
+    """Get public bot information (no auth required)"""
+    bot = BotService.get_bot(db, bot_id)
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+
+    # Return only public fields (exclude API keys and sensitive data)
+    return {
+        "id": bot.id,
+        "name": bot.name,
+        "widget_title": bot.widget_title,
+        "widget_greeting": bot.widget_greeting,
+        "widget_color": bot.widget_color,
+        "enable_suggestions": bot.enable_suggestions
+    }
+
+
 @router.get("/{bot_id}", response_model=BotResponse)
 def get_bot(bot_id: str, db: Session = Depends(get_db), username: str = Depends(require_auth_dependency)):
-    """Get a specific bot"""
+    """Get a specific bot (requires authentication)"""
     bot = BotService.get_bot(db, bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")

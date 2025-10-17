@@ -464,7 +464,7 @@
         // Load bot configuration
         async function loadBotConfig() {
             try {
-                const response = await fetch(`${API_BASE}/api/bots/${botId}`);
+                const response = await fetch(`${API_BASE}/api/bots/${botId}/public`);
                 const bot = await response.json();
 
                 document.getElementById('chat-title').textContent = bot.widget_title || bot.name;
