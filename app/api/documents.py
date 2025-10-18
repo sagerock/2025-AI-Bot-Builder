@@ -531,22 +531,37 @@ async def delete_document(
 ):
     """Delete all chunks of a specific document by filename"""
     try:
-        # Get all points for this document
-        points = qdrant_service.search_points_by_metadata(
-            collection_name=collection_name,
-            metadata_key="source",
-            metadata_value=filename,
-            limit=10000  # High limit to get all chunks
-        )
+        # Get all points by scrolling (doesn't require index)
+        all_points = []
+        offset = None
 
-        if not points:
+        while True:
+            result = qdrant_service.scroll_points(
+                collection_name=collection_name,
+                limit=100,
+                offset=offset,
+                with_vectors=False
+            )
+            all_points.extend(result["points"])
+
+            if not result["next_offset"]:
+                break
+            offset = result["next_offset"]
+
+        # Filter points by source filename
+        matching_points = [
+            point for point in all_points
+            if point["payload"].get("source") == filename
+        ]
+
+        if not matching_points:
             raise HTTPException(
                 status_code=404,
                 detail=f"No chunks found for document '{filename}'"
             )
 
         # Extract point IDs
-        point_ids = [p["id"] for p in points]
+        point_ids = [p["id"] for p in matching_points]
 
         # Delete all points
         qdrant_service.delete_points(

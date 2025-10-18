@@ -5,10 +5,11 @@ from fastapi import Request, HTTPException, status
 from fastapi.responses import RedirectResponse
 import secrets
 from typing import Optional
+from app.config import settings
 
-# Simple hardcoded credentials (for single user)
-USERNAME = "sagelewis"
-PASSWORD = "SageLewis1971"
+# Simple credentials (from environment or hardcoded fallback)
+USERNAME = "admin"
+PASSWORD = settings.admin_password
 
 # Store active sessions (username -> session_token)
 sessions = {}
