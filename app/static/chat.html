@@ -645,6 +645,14 @@
                 return `__CODEBLOCK_${codeBlocks.length - 1}__`;
             });
 
+            // Strip unwanted HTML tags that AI might generate (preserve <br> only)
+            // Remove <pre>, <code>, <p>, and other formatting tags while preserving content
+            html = html.replace(/<\/?pre[^>]*>/gi, '');
+            html = html.replace(/<\/?code[^>]*>/gi, '');
+            html = html.replace(/<p><\/p>/gi, ''); // Remove empty <p> tags
+            html = html.replace(/<p>/gi, '\n\n'); // Convert <p> to double newline
+            html = html.replace(/<\/p>/gi, ''); // Remove closing </p>
+
             // Escape HTML tags but preserve <br> tags
             html = html.replace(/<br\s*\/?>/gi, '__BR_TAG__');
             html = html.replace(/&/g, '&amp;')
