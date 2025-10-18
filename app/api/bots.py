@@ -52,7 +52,9 @@ def get_bot_public(bot_id: str, db: Session = Depends(get_db)):
         "widget_title": bot.widget_title,
         "widget_greeting": bot.widget_greeting,
         "widget_color": bot.widget_color,
-        "enable_suggestions": bot.enable_suggestions
+        "enable_suggestions": bot.enable_suggestions,
+        "use_qdrant": bot.use_qdrant,
+        "qdrant_collection": bot.qdrant_collection
     }
 
 

@@ -1233,7 +1233,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/api/bots/${botId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 if (!response.ok) throw new Error('Failed to delete bot');
@@ -1379,7 +1380,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/api/api-keys/${keyId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 if (!response.ok) throw new Error('Failed to delete API key');
@@ -1778,7 +1780,8 @@
 
             try {
                 const response = await fetch(`${API_BASE}/api/documents/collections/${collectionName}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 if (!response.ok) {
@@ -1921,7 +1924,10 @@
             try {
                 const response = await fetch(
                     `${API_BASE}/api/documents/collections/${encodeURIComponent(currentCollection)}/documents/${encodeURIComponent(filename)}`,
-                    { method: 'DELETE' }
+                    {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    }
                 );
 
                 if (!response.ok) {
@@ -2023,6 +2029,7 @@
             try {
                 const response = await fetch(`${API_BASE}/api/documents/collections/${encodeURIComponent(collectionName)}/points`, {
                     method: 'DELETE',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ point_ids: [pointId] })
                 });

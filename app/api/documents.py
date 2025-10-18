@@ -464,10 +464,12 @@ async def search_by_metadata(
 
 @router.get("/collections/{collection_name}/documents")
 async def list_documents(
-    collection_name: str,
-    username: str = Depends(require_auth_dependency)
+    collection_name: str
 ):
-    """Get list of unique documents in a collection (grouped by source filename)"""
+    """Get list of unique documents in a collection (grouped by source filename)
+
+    Note: This endpoint is public (no auth required) so chat interface can access it
+    """
     try:
         # Get all points from the collection
         all_points = []
