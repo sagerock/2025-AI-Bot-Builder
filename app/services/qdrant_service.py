@@ -406,20 +406,35 @@ class QdrantService:
             return ""
 
         try:
-            # Get all points for this document (high limit to get all chunks)
-            points = self.search_points_by_metadata(
-                collection_name=collection_name,
-                metadata_key="source",
-                metadata_value=filename,
-                limit=10000  # High limit to ensure we get all chunks
-            )
+            # Get all points by scrolling (doesn't require index)
+            all_points = []
+            offset = None
 
-            if not points:
+            while True:
+                result = self.scroll_points(
+                    collection_name=collection_name,
+                    limit=100,
+                    offset=offset,
+                    with_vectors=False
+                )
+                all_points.extend(result["points"])
+
+                if not result["next_offset"]:
+                    break
+                offset = result["next_offset"]
+
+            # Filter points by source filename
+            matching_points = [
+                point for point in all_points
+                if point["payload"].get("source") == filename
+            ]
+
+            if not matching_points:
                 return ""
 
             # Sort chunks by chunk_index to maintain document order
             sorted_chunks = sorted(
-                points,
+                matching_points,
                 key=lambda x: x["payload"].get("chunk_index", 0)
             )
 
