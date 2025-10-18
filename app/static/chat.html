@@ -165,6 +165,24 @@
             margin: 8px 0 4px 0;
         }
 
+        .message-content h4 {
+            font-size: 1.05em;
+            font-weight: 600;
+            margin: 8px 0 4px 0;
+        }
+
+        .message-content h5 {
+            font-size: 1em;
+            font-weight: 600;
+            margin: 6px 0 3px 0;
+        }
+
+        .message-content h6 {
+            font-size: 0.95em;
+            font-weight: 600;
+            margin: 6px 0 3px 0;
+        }
+
         .message-content p {
             margin: 8px 0;
         }
@@ -416,6 +434,78 @@
             color: #666;
             padding: 40px 20px;
         }
+
+        .full-document-controls {
+            padding: 12px 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-container input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--bot-color, #0066CC);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .toggle-label .icon {
+            width: 18px;
+            height: 18px;
+            color: var(--bot-color, #0066CC);
+        }
+
+        .mode-hint {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        #document-selector {
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #374151;
+            background: white;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #document-selector:focus {
+            border-color: var(--bot-color, #0066CC);
+        }
+
+        #document-selector:disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #document-selector option {
+            padding: 8px;
+        }
     </style>
 </head>
 <body>
@@ -431,6 +521,26 @@
         </div>
 
         <div id="file-preview-container" style="padding: 0 20px; display: none;"></div>
+
+        <div class="full-document-controls" id="full-document-controls" style="display: none;">
+            <label class="toggle-container">
+                <input type="checkbox" id="full-document-toggle" onchange="toggleFullDocumentMode()">
+                <span class="toggle-label">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Full Document Mode
+                    <span class="mode-hint">(retrieve entire document for outlines)</span>
+                </span>
+            </label>
+            <select id="document-selector" disabled>
+                <option value="">Select a document...</option>
+            </select>
+        </div>
 
         <div class="input-container">
             <input
@@ -473,8 +583,54 @@
                 if (bot.widget_greeting) {
                     document.getElementById('greeting').textContent = bot.widget_greeting;
                 }
+
+                // Load available documents if bot uses Qdrant
+                if (bot.use_qdrant && bot.qdrant_collection) {
+                    await loadAvailableDocuments(bot.qdrant_collection);
+                }
             } catch (error) {
                 console.error('Failed to load bot config:', error);
+            }
+        }
+
+        // Load available documents from Qdrant collection
+        async function loadAvailableDocuments(collection) {
+            try {
+                const response = await fetch(`${API_BASE}/api/documents/collections/${collection}/documents`);
+                if (!response.ok) return;
+
+                const data = await response.json();
+
+                if (data.documents && data.documents.length > 0) {
+                    // Show the full document controls
+                    document.getElementById('full-document-controls').style.display = 'flex';
+
+                    // Populate the document selector
+                    const selector = document.getElementById('document-selector');
+                    selector.innerHTML = '<option value="">Select a document...</option>';
+
+                    data.documents.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.filename;
+                        option.textContent = `${doc.filename} (${doc.chunk_count} chunks)`;
+                        selector.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load documents:', error);
+            }
+        }
+
+        // Toggle full document mode
+        function toggleFullDocumentMode() {
+            const checkbox = document.getElementById('full-document-toggle');
+            const selector = document.getElementById('document-selector');
+
+            if (checkbox.checked) {
+                selector.disabled = false;
+            } else {
+                selector.disabled = true;
+                selector.value = '';
             }
         }
 
@@ -549,7 +705,10 @@
             html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
             html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
 
-            // Headers
+            // Headers (h6 to h1, process in reverse order to handle longer matches first)
+            html = html.replace(/^###### (.*$)/gim, '<h6>$1</h6>');
+            html = html.replace(/^##### (.*$)/gim, '<h5>$1</h5>');
+            html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
             html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -780,7 +939,16 @@
                     formData.append('file', selectedFile);
                 }
 
-                const response = await fetch(`${API_BASE}/api/chat/${botId}`, {
+                // Build URL with full_document parameter if enabled
+                let chatUrl = `${API_BASE}/api/chat/${botId}`;
+                const fullDocToggle = document.getElementById('full-document-toggle');
+                const docSelector = document.getElementById('document-selector');
+
+                if (fullDocToggle && fullDocToggle.checked && docSelector.value) {
+                    chatUrl += `?full_document=${encodeURIComponent(docSelector.value)}`;
+                }
+
+                const response = await fetch(chatUrl, {
                     method: 'POST',
                     body: formData
                 });
