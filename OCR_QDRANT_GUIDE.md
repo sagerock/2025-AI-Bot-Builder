@@ -82,6 +82,57 @@ This will:
 - ✅ Quick fact lookups
 - ✅ Comparing specific topics
 
+### Step 3b: Recommended Token Settings for Full Document Mode
+
+When using full document mode with 50-page chapters, you need higher `max_tokens` settings:
+
+**Token Breakdown:**
+- **Input (the document):** ~25,000-37,500 tokens for a 50-page chapter
+- **Output (your outline):** Depends on detail level you want
+
+**Recommended max_tokens by use case:**
+
+| Use Case | max_tokens | Output Size | Cost (Sonnet 4.5) |
+|----------|-----------|-------------|-------------------|
+| **Quick Summary** | 4,000 - 8,000 | ~1,000-2,000 words | ~$0.06-$0.12 |
+| **Detailed Outline** | 12,000 - 20,000 | ~3,000-5,000 words | ~$0.18-$0.30 |
+| **Comprehensive Outline** | 24,000 - 40,000 | ~6,000-10,000 words | ~$0.36-$0.60 |
+
+**Model Recommendations:**
+
+```yaml
+# For most outlines (best balance)
+Model: claude-sonnet-4-5-20250929
+Max Tokens: 16,384
+Cost: ~$0.35 per outline
+Use: Detailed multi-level outlines with examples
+
+# For fast/cheap summaries
+Model: claude-haiku-4-5-20250514
+Max Tokens: 8,192
+Cost: ~$0.15 per outline
+Use: Quick chapter summaries
+
+# For maximum detail
+Model: claude-sonnet-4-5-20250929 or gpt-5
+Max Tokens: 32,000
+Cost: ~$0.48-$0.60 per outline
+Use: Extremely comprehensive outlines
+```
+
+**Important Notes:**
+- ⚠️ Don't set max_tokens higher than your model supports (see validation table below)
+- 💡 Start with 16K tokens - increase only if outlines seem cut off
+- 💰 Higher max_tokens = higher costs even if not fully used
+- ⚡ Larger outputs take longer to generate
+
+**Model Max Token Limits:**
+- GPT-5: 128,000 max output
+- Claude Sonnet 4.5: 64,000 max output
+- Claude Haiku 4.5: 64,000 max output
+- Claude Opus 4.1: 32,000 max output
+- Claude 3.5 models: 8,000 max output
+
 ### Step 4: Clean Up When Done (Optional)
 
 After you're done studying that chapter, you can delete the collection:

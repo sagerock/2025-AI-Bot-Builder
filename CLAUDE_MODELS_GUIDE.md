@@ -6,14 +6,28 @@ Complete guide to using Anthropic's latest Claude models in the AI Bot Builder p
 
 The platform now supports all current Anthropic Claude models, including the latest Claude 4 generation.
 
-### Claude 4 (Latest Generation)
+### Claude 4.x (Latest Generation) ⭐ **Current Recommended**
 
-| Model | Best For | Context | Max Output | Knowledge Cutoff |
-|-------|----------|---------|------------|------------------|
-| **Claude Sonnet 4.5** | Complex agents and coding, highest intelligence | 200K (1M beta) | 64K tokens | Jan 2025 |
-| **Claude Opus 4.1** | Specialized complex tasks, exceptional reasoning | 200K | 32K tokens | Jan 2025 |
-| **Claude Sonnet 4** | High intelligence and balanced performance | 200K (1M beta) | 64K tokens | Jan 2025 |
-| **Claude Opus 4** | Very high intelligence and capability | 200K | 32K tokens | Jan 2025 |
+| Model | API Name | Best For | Context | Max Output | Input Price | Output Price |
+|-------|----------|----------|---------|------------|-------------|--------------|
+| **Sonnet 4.5** | `claude-sonnet-4-5-20250929` | Complex agents, coding, autonomous tasks | 200K (1M beta) | **64K** | $3/MTok | $15/MTok |
+| **Haiku 4.5** | `claude-haiku-4-5-20250514` | Fast, cost-efficient, high-volume tasks | 200K | **64K** | $0.80/MTok | $5/MTok |
+| **Opus 4.1** | `claude-opus-4-1-20250514` | Specialized reasoning, exceptional tasks | 200K | **32K** | $15/MTok | $75/MTok |
+| **Sonnet 4** | `claude-sonnet-4-20250514` | General purpose, balanced tasks | 200K | **64K** | $3/MTok | $15/MTok |
+
+**Knowledge Cutoffs:**
+- Sonnet 4.5: Jan 2025
+- Haiku 4.5: Feb 2025
+- Opus 4.1: Jan 2025
+- Sonnet 4: Jan 2025
+
+**Key Features (All Claude 4.x):**
+- ✅ Extended thinking capability
+- ✅ Priority tier access
+- ✅ Vision support
+- ✅ Superior tool use
+- ✅ Multilingual
+- ✅ Up to 1M context (beta, Sonnet models)
 
 ### Claude 3.7 (Extended Thinking)
 
@@ -130,7 +144,7 @@ System Prompt: |
   - Problem-solving approach
 ```
 
-#### Claude 3.5 Haiku (Fastest & Most Affordable)
+#### Claude Haiku 4.5 (Fastest & Most Affordable)
 ```yaml
 Best for:
 - Basic customer support
@@ -138,19 +152,22 @@ Best for:
 - Straightforward data extraction
 - Quick responses needed
 - Cost-sensitive applications
+- Long-form content generation
 
 Strengths:
 - Blazing fast responses
-- Low cost
-- Good for simple tasks
+- Low cost ($5/MTok output)
+- 64K max output (8x more than 3.5 Haiku)
+- Extended thinking capability
+- Better intelligence than 3.5
 ```
 
 **Example Bot Configuration:**
 ```yaml
 Name: Quick FAQ Bot
-Model: claude-3-5-haiku-20241022
+Model: claude-haiku-4-5-20250514
 Temperature: 50
-Max Tokens: 1024
+Max Tokens: 4096
 System Prompt: |
   You are a quick-response FAQ assistant.
   Answer questions concisely and accurately.
@@ -169,9 +186,9 @@ System Prompt: |
 
 **Path:**
 ```
-1. Start: Claude 3.5 Haiku
+1. Start: Claude Haiku 4.5
 2. Test thoroughly
-3. Upgrade only if needed
+3. Upgrade only if needed (Sonnet 4 or 4.5)
 ```
 
 ### Option 2: Start with Most Capable
@@ -197,23 +214,24 @@ System Prompt: |
 | **Autonomous coding agent** | Claude Sonnet 4.5 | Best coding, tool use, agents |
 | **Complex analysis** | Claude Opus 4.1 | Exceptional reasoning |
 | **General chatbot** | Claude Sonnet 4 | Balanced intelligence & speed |
-| **Customer support** | Claude 3.5 Haiku | Fast & affordable |
-| **Content generation (high volume)** | Claude 3.5 Haiku | Cost-effective |
+| **Customer support** | Claude Haiku 4.5 | Fast & affordable with 64K output |
+| **Content generation (high volume)** | Claude Haiku 4.5 | Cost-effective with large output |
 | **Scientific research** | Claude Opus 4.1 | Deep reasoning |
 | **Code generation** | Claude Sonnet 4.5 | Best for coding |
-| **Quick Q&A** | Claude 3.5 Haiku | Fastest responses |
+| **Quick Q&A** | Claude Haiku 4.5 | Fastest responses, better than 3.5 |
 | **Multi-agent frameworks** | Claude Sonnet 4.5 | Superior orchestration |
 
 ## Feature Support
 
-| Feature | Sonnet 4.5 | Opus 4.1 | Sonnet 4 | Haiku 3.5 |
-|---------|------------|----------|----------|-----------|
-| **Vision** | ✅ | ✅ | ✅ | ✅ |
-| **Extended Thinking** | ✅ | ✅ | ✅ | ❌ |
-| **Tool Use** | ✅ Best | ✅ | ✅ | ✅ |
-| **200K Context** | ✅ | ✅ | ✅ | ✅ |
-| **1M Context (beta)** | ✅ | ❌ | ✅ | ❌ |
-| **Multilingual** | ✅ | ✅ | ✅ | ✅ |
+| Feature | Sonnet 4.5 | Haiku 4.5 | Opus 4.1 | Sonnet 4 | Haiku 3.5 |
+|---------|------------|-----------|----------|----------|-----------|
+| **Vision** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Extended Thinking** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Tool Use** | ✅ Best | ✅ | ✅ | ✅ | ✅ |
+| **Max Output** | 64K | 64K | 32K | 64K | 8K |
+| **200K Context** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **1M Context (beta)** | ✅ | ❌ | ❌ | ✅ | ❌ |
+| **Multilingual** | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Creating Bots with Latest Models
 
@@ -323,15 +341,15 @@ System Prompt: |
 - Product recommendations
 - Order support
 
-### Example 4: High-Volume FAQ Bot (Claude 3.5 Haiku)
+### Example 4: High-Volume FAQ Bot (Claude Haiku 4.5)
 
 ```yaml
 Bot Configuration:
   Name: "Quick FAQ Assistant"
   Provider: Anthropic
-  Model: claude-3-5-haiku-20241022
+  Model: claude-haiku-4-5-20250514
   Temperature: 50
-  Max Tokens: 512
+  Max Tokens: 2048
   Memory: Disabled
 
 System Prompt: |
@@ -352,6 +370,7 @@ System Prompt: |
 - Quick information lookup
 - High-volume simple queries
 - Cost-sensitive deployments
+- Long-form responses when needed (64K max output)
 
 ## Model-Specific Tips
 
@@ -360,6 +379,13 @@ System Prompt: |
 - **Prompt tip:** Give it space to think and use tools
 - **Temperature:** 60-80 for balanced creativity
 - **Max tokens:** 4096+ for complex responses
+
+### Claude Haiku 4.5
+- **Best for:** Speed and volume with intelligence
+- **Prompt tip:** Keep prompts focused but can handle complexity
+- **Temperature:** 40-60 for consistency
+- **Max tokens:** 1024-4096 (64K max available!)
+- **Note:** Much better than 3.5 Haiku - can handle more nuanced tasks
 
 ### Claude Opus 4.1
 - **Best for:** Deep analysis, specialized tasks
@@ -373,8 +399,8 @@ System Prompt: |
 - **Temperature:** 60-80 for most uses
 - **Max tokens:** 1024-2048 typical
 
-### Claude 3.5 Haiku
-- **Best for:** Speed and volume
+### Claude 3.5 Haiku (Legacy)
+- **Best for:** Speed and volume (consider upgrading to Haiku 4.5)
 - **Prompt tip:** Keep prompts focused and simple
 - **Temperature:** 40-60 for consistency
 - **Max tokens:** 512-1024 for quick responses
@@ -386,9 +412,10 @@ System Prompt: |
 | Model | Input | Output | Use Case |
 |-------|-------|--------|----------|
 | Claude Sonnet 4.5 | $3 | $15 | Complex tasks worth the cost |
+| Claude Haiku 4.5 | $0.80 | $5 | High volume, cost-sensitive |
 | Claude Opus 4.1 | $15 | $75 | Specialized high-value tasks |
 | Claude Sonnet 4 | $3 | $15 | General purpose |
-| Claude 3.5 Haiku | $0.80 | $4 | High volume, cost-sensitive |
+| Claude 3.5 Haiku | $0.80 | $4 | Legacy high-volume tasks |
 
 ### Cost Reduction Strategies
 
@@ -491,30 +518,31 @@ Autonomous agents → Claude Sonnet 4.5
 
 The platform now supports all latest Claude models:
 
-✅ **Claude 4 Generation** - Latest and greatest
-- Sonnet 4.5 (best for agents & coding)
-- Opus 4.1 (exceptional reasoning)
-- Sonnet 4 (balanced)
-- Opus 4 (capable)
+✅ **Claude 4.x Generation** - Latest and greatest
+- **Sonnet 4.5** (`claude-sonnet-4-5-20250929`) - Best for agents & coding - 64K output, $15/MTok
+- **Haiku 4.5** (`claude-haiku-4-5-20250514`) - Fast & cost-efficient - 64K output, $5/MTok
+- **Opus 4.1** (`claude-opus-4-1-20250514`) - Exceptional reasoning - 32K output, $75/MTok
+- **Sonnet 4** (`claude-sonnet-4-20250514`) - Balanced performance - 64K output, $15/MTok
 
 ✅ **Claude 3.7** - Extended thinking
+- Sonnet 3.7 (128K output with beta)
 
 ✅ **Claude 3.5** - Previous generation
-- Sonnet (general)
-- Haiku (fast & cheap)
+- Sonnet 3.5 (8K output)
+- Haiku 3.5 (8K output, fastest)
 
 ✅ **Claude 3** - Legacy support
 
 **Quick Start:**
 1. Go to admin dashboard
 2. Select Anthropic provider
-3. Choose your Claude model
+3. Choose your Claude model (use exact API name)
 4. Configure and deploy!
 
 **Recommended Defaults:**
-- **General use:** Claude Sonnet 4
-- **Agents/coding:** Claude Sonnet 4.5
-- **High volume:** Claude 3.5 Haiku
-- **Deep analysis:** Claude Opus 4.1
+- **General use:** Claude Sonnet 4 (`claude-sonnet-4-20250514`)
+- **Agents/coding:** Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
+- **High volume:** Claude Haiku 4.5 (`claude-haiku-4-5-20250514`)
+- **Deep analysis:** Claude Opus 4.1 (`claude-opus-4-1-20250514`)
 
-All models work seamlessly with the platform's features: RAG, memory, widgets, and deployment options!
+All models work seamlessly with the platform's features: RAG, memory, widgets, OCR, and deployment options!

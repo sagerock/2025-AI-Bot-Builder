@@ -1,6 +1,40 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+
+
+# Model-specific max token limits
+MODEL_MAX_TOKENS = {
+    # Claude 4.x
+    'claude-sonnet-4-5': 64000,
+    'claude-haiku-4-5': 64000,
+    'claude-sonnet-4': 64000,
+    'claude-opus-4-1': 32000,
+    # Claude 3.x
+    'claude-3-7': 128000,
+    'claude-3-5-sonnet': 8000,
+    'claude-3-5-haiku': 8000,
+    'claude-3-opus': 4000,
+    'claude-3-sonnet': 4000,
+    'claude-3-haiku': 4000,
+    # OpenAI GPT-5
+    'gpt-5': 128000,
+    'gpt-5-mini': 128000,
+    'gpt-5-nano': 128000,
+    # OpenAI GPT-4
+    'gpt-4': 8000,
+    'gpt-4o': 16000,
+    'gpt-4-turbo': 4096,
+}
+
+
+def get_model_max_tokens(model: str) -> int:
+    """Get max tokens for a model, checking partial matches"""
+    for key, max_tokens in MODEL_MAX_TOKENS.items():
+        if key in model.lower():
+            return max_tokens
+    # Default to 8000 for unknown models
+    return 8000
 
 
 class BotBase(BaseModel):
@@ -10,7 +44,21 @@ class BotBase(BaseModel):
     model: str = Field(..., min_length=1)
     system_prompt: str = Field(..., min_length=1)
     temperature: int = Field(default=70, ge=0, le=100)
-    max_tokens: int = Field(default=8192, ge=1, le=128000)  # Supports GPT-5 (128k max output)
+    max_tokens: int = Field(default=8192, ge=1, le=128000)  # Absolute max, validated per model
+
+    @field_validator('max_tokens')
+    @classmethod
+    def validate_max_tokens_for_model(cls, v: int, info) -> int:
+        """Validate max_tokens doesn't exceed model's capability"""
+        # Get model from the data being validated
+        model = info.data.get('model', '')
+        if model:
+            model_limit = get_model_max_tokens(model)
+            if v > model_limit:
+                raise ValueError(
+                    f"max_tokens ({v}) exceeds limit for {model} (max: {model_limit})"
+                )
+        return v
 
     # GPT-5 specific settings
     reasoning_effort: str = Field(default="medium", pattern="^(minimal|low|medium|high)$")

@@ -4,10 +4,11 @@ A streamlined platform for creating and deploying AI chatbots with ease. Build b
 
 ## Features
 
-- **Latest AI Models**: Full support for Claude 4 (Sonnet 4.5, Opus 4.1, Sonnet 4, Opus 4) and OpenAI GPT-5!
-- **Anthropic Claude**: All Claude models including latest Claude 4 generation with superior coding and reasoning
-- **OpenAI GPT-5**: Complete integration with GPT-5 reasoning models with configurable effort and verbosity
-- **RAG Integration**: Connect bots to Qdrant vector databases for knowledge retrieval
+- **Latest AI Models**: Full support for Claude 4.x (Sonnet 4.5, Haiku 4.5, Opus 4.1, Sonnet 4) and OpenAI GPT-5!
+- **Anthropic Claude 4.x**: All latest models with 64K max output, extended thinking, and superior tool use
+- **OpenAI GPT-5**: Complete integration with GPT-5 (128K output) and GPT-5 Mini with configurable reasoning
+- **OCR Support**: Upload scanned documents (up to 25 MB) with automatic text extraction
+- **RAG Integration**: Connect bots to Qdrant vector databases for knowledge retrieval with full document mode
 - **Session Memory**: Optional conversation history tracking
 - **Easy Deployment**: Each bot gets a unique URL and embeddable widget code
 - **Simple Management**: Clean admin interface for bot CRUD operations
@@ -98,23 +99,57 @@ See `docs/deployment.md` for detailed deployment instructions for various platfo
 
 ## Latest Model Support
 
-### Anthropic Claude 4
-The platform fully supports the latest Claude 4 models:
-- **Claude Sonnet 4.5** - Best for complex agents and coding
-- **Claude Opus 4.1** - Exceptional for specialized complex tasks
-- **Claude Sonnet 4** - High intelligence and speed balance
-- **Plus all Claude 3.7, 3.5, and 3 models**
+### Anthropic Claude 4.x ⭐
 
-See `CLAUDE_MODELS_GUIDE.md` for detailed documentation.
+The platform fully supports the latest Claude 4 generation models:
 
-### OpenAI GPT-5
-Full support for OpenAI's GPT-5 reasoning models:
-- Automatic Responses API routing
-- Configurable reasoning effort (minimal, low, medium, high)
-- Configurable text verbosity (low, medium, high)
-- All GPT-5 variants: gpt-5, gpt-5-mini, gpt-5-nano
+| Model | API Name | Context | Max Output | Output Price | Best For |
+|-------|----------|---------|------------|--------------|----------|
+| **Sonnet 4.5** | `claude-sonnet-4-5-20250929` | 200K (1M beta) | 64K | $15/MTok | Complex agents, coding, autonomous tasks |
+| **Haiku 4.5** | `claude-haiku-4-5-20250514` | 200K | 64K | $5/MTok | Fast, cost-efficient, high-volume tasks |
+| **Opus 4.1** | `claude-opus-4-1-20250514` | 200K | 32K | $75/MTok | Specialized reasoning, exceptional tasks |
+| **Sonnet 4** | `claude-sonnet-4-20250514` | 200K | 64K | $15/MTok | General purpose, balanced tasks |
 
-See `GPT5_GUIDE.md` for detailed documentation.
+**Key Features (All Claude 4.x):**
+- ✅ Extended thinking capability
+- ✅ Priority tier access
+- ✅ Vision support
+- ✅ Superior tool use
+- ✅ Multilingual
+- ✅ Knowledge cutoff: Jan 2025
+
+**Plus support for:** Claude 3.7, 3.5, and 3 models
+
+📖 See `CLAUDE_MODELS_GUIDE.md` for complete documentation
+
+### OpenAI GPT-5 🚀
+
+Full support for OpenAI's latest GPT-5 reasoning models:
+
+| Model | API Name | Context | Max Output | Output Price | Best For |
+|-------|----------|---------|------------|--------------|----------|
+| **GPT-5** | `gpt-5` | 400K | 128K | $10/MTok | Advanced reasoning, complex tasks |
+| **GPT-5 Mini** | `gpt-5-mini` | 400K | 128K | $2/MTok | Cost-efficient reasoning |
+
+**Key Features:**
+- ✅ Automatic Responses API routing
+- ✅ Configurable reasoning effort (minimal, low, medium, high)
+- ✅ Configurable text verbosity (low, medium, high)
+- ✅ Extended reasoning capabilities
+- ✅ Superior coding performance
+
+📖 See `GPT5_GUIDE.md` for complete documentation
+
+### Quick Model Selection Guide
+
+| Use Case | Recommended Model | Why |
+|----------|------------------|-----|
+| **Autonomous coding agents** | Claude Sonnet 4.5 | Best coding, tool use, agents |
+| **Complex analysis** | Claude Opus 4.1 | Exceptional reasoning |
+| **General chatbot** | Claude Sonnet 4 | Balanced intelligence & speed |
+| **High-volume tasks** | Claude Haiku 4.5 | Fast & affordable (64K output) |
+| **Advanced reasoning** | GPT-5 | Superior reasoning with 128K output |
+| **Cost-efficient reasoning** | GPT-5 Mini | Budget-friendly with full GPT-5 capabilities |
 
 ## License
 

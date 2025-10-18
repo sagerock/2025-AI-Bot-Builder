@@ -365,6 +365,93 @@
             border-color: #0066CC;
             background: #f0f7ff;
         }
+
+        /* Tooltip styles */
+        .label-with-help {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0066CC;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+        }
+
+        .help-icon:hover {
+            background: #0052A3;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            z-index: 1000;
+            background: #333;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+            width: 400px;
+            max-width: 90vw;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(100% + 10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+        }
+
+        .help-icon:hover .tooltip {
+            visibility: visible;
+        }
+
+        .tooltip table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .tooltip th,
+        .tooltip td {
+            text-align: left;
+            padding: 6px 8px;
+            border-bottom: 1px solid #555;
+        }
+
+        .tooltip th {
+            font-weight: 600;
+            color: #4FC3F7;
+        }
+
+        .tooltip tr:last-child th,
+        .tooltip tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4FC3F7;
+        }
     </style>
 </head>
 <body>
@@ -641,8 +728,59 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Max Tokens</label>
-                    <input type="number" id="bot-max-tokens" min="1" max="4096" value="1024">
+                    <div class="label-with-help">
+                        <label>Max Tokens</label>
+                        <span class="help-icon">?
+                            <div class="tooltip">
+                                <div class="tooltip-title">Model-Specific Max Token Limits</div>
+                                <table>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Max Output</th>
+                                    </tr>
+                                    <tr>
+                                        <td>GPT-5, GPT-5 Mini</td>
+                                        <td>128,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude Sonnet 4.5</td>
+                                        <td>64,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude Haiku 4.5</td>
+                                        <td>64,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude Sonnet 4</td>
+                                        <td>64,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude Opus 4.1</td>
+                                        <td>32,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude 3.7 Sonnet</td>
+                                        <td>128,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Claude 3.5 Models</td>
+                                        <td>8,000</td>
+                                    </tr>
+                                </table>
+                                <div style="margin-top: 10px; font-size: 12px; opacity: 0.9;">
+                                    ⚠️ Setting too high will cause API errors. Platform validates per model.
+                                </div>
+                                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #555; font-size: 12px;">
+                                    <strong style="color: #4FC3F7;">📄 Full Document Mode:</strong><br>
+                                    For creating outlines from 50-page documents:<br>
+                                    • <strong>Detailed outlines:</strong> 16,384 tokens<br>
+                                    • <strong>Quick summaries:</strong> 8,192 tokens<br>
+                                    • <strong>Comprehensive:</strong> 24,000-32,000 tokens
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+                    <input type="number" id="bot-max-tokens" min="1" max="128000" value="8192">
                 </div>
 
                 <div id="gpt5-settings" style="display: none;">
