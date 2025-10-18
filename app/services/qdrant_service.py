@@ -387,6 +387,59 @@ class QdrantService:
             print(f"Error searching points: {e}")
             return []
 
+    def get_all_chunks_for_document(
+        self,
+        collection_name: str,
+        filename: str
+    ) -> str:
+        """
+        Retrieve ALL chunks for a specific document and return as concatenated text
+
+        Args:
+            collection_name: Name of the Qdrant collection
+            filename: Source filename to retrieve chunks for
+
+        Returns:
+            Full document text with all chunks concatenated in order
+        """
+        if not self.client:
+            return ""
+
+        try:
+            # Get all points for this document (high limit to get all chunks)
+            points = self.search_points_by_metadata(
+                collection_name=collection_name,
+                metadata_key="source",
+                metadata_value=filename,
+                limit=10000  # High limit to ensure we get all chunks
+            )
+
+            if not points:
+                return ""
+
+            # Sort chunks by chunk_index to maintain document order
+            sorted_chunks = sorted(
+                points,
+                key=lambda x: x["payload"].get("chunk_index", 0)
+            )
+
+            # Extract text from each chunk
+            texts = []
+            for chunk in sorted_chunks:
+                text = chunk["payload"].get("text") or chunk["payload"].get("content", "")
+                if text:
+                    texts.append(text)
+
+            # Join all chunks with double newline
+            full_text = "\n\n".join(texts)
+
+            print(f"Retrieved {len(sorted_chunks)} chunks for document '{filename}'")
+            return full_text
+
+        except Exception as e:
+            print(f"Error retrieving full document: {e}")
+            return ""
+
 
 # Singleton instance
 qdrant_service = QdrantService()

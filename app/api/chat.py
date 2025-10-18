@@ -42,11 +42,27 @@ async def chat(
     message: str = Form(...),
     session_id: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    full_document: Optional[str] = None,
     authorization: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Send a message to a bot and get a response, with optional file upload
+
+    Args:
+        bot_id: ID of the bot to chat with
+        message: User message text
+        session_id: Optional session ID for conversation continuity
+        file: Optional file upload (image or document)
+        full_document: Optional filename to retrieve ALL chunks from Qdrant (instead of RAG search)
+        authorization: Optional JWT token for authentication
+        db: Database session
+
+    Example full_document usage:
+        POST /api/chat/{bot_id}?full_document=chapter-3.pdf
+        Body: { "message": "Create an outline of this chapter" }
+
+        This will retrieve ALL chunks from "chapter-3.pdf" instead of using RAG search.
     """
     # Extract user info from token if provided
     user_info = None
@@ -140,7 +156,21 @@ async def chat(
     # Get RAG contexts if enabled
     rag_contexts = None
     if bot.use_qdrant and bot.qdrant_collection:
-        rag_contexts = ChatService.get_rag_contexts(bot, message)
+        if full_document:
+            # Retrieve ALL chunks from the specified document
+            from app.services.qdrant_service import qdrant_service
+            full_text = qdrant_service.get_all_chunks_for_document(
+                collection_name=bot.qdrant_collection,
+                filename=full_document
+            )
+            if full_text:
+                rag_contexts = [full_text]
+            else:
+                # Document not found, fall back to normal RAG search
+                rag_contexts = ChatService.get_rag_contexts(bot, message)
+        else:
+            # Normal RAG search with top_k chunks
+            rag_contexts = ChatService.get_rag_contexts(bot, message)
 
     # Save user message (with file indicator if present)
     user_message_display = message

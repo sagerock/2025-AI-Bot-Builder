@@ -55,6 +55,33 @@ Example questions:
 - "Explain the doctrine of res ipsa loquitur"
 - "What's the difference between battery and assault?"
 
+### Step 3a: Create Chapter Outlines (Full Document Mode)
+
+**NEW FEATURE:** When you need to see the ENTIRE chapter (not just relevant chunks), use the `full_document` parameter:
+
+```bash
+curl -X POST "http://localhost:8000/api/chat/YOUR_BOT_ID?full_document=torts-chapter-3.pdf" \
+  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
+  -F "message=Create a detailed outline of this chapter" \
+  -F "session_id=YOUR_SESSION_ID"
+```
+
+This will:
+- Retrieve **ALL chunks** from "torts-chapter-3.pdf" (instead of just top 5)
+- Give the bot complete chapter context
+- Perfect for creating outlines, summaries, or getting the big picture
+
+**When to use full_document mode:**
+- ✅ Creating chapter outlines
+- ✅ Generating comprehensive summaries
+- ✅ Finding all mentions of a topic across the chapter
+- ✅ Getting the big picture
+
+**When to use normal RAG (without full_document):**
+- ✅ Specific questions about a concept
+- ✅ Quick fact lookups
+- ✅ Comparing specific topics
+
 ### Step 4: Clean Up When Done (Optional)
 
 After you're done studying that chapter, you can delete the collection:
