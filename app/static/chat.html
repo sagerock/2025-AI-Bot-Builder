@@ -663,18 +663,18 @@
                 return '__TABLE_ROW__' + cells.map(cell => `<td>${cell}</td>`).join('') + '__TABLE_ROW_END__';
             });
 
-            // Group table rows into tables
-            html = html.replace(/((?:__TABLE_ROW__.+?__TABLE_ROW_END__\n?)+)/g, (match) => {
-                const rows = match.split('__TABLE_ROW_END__').filter(r => r.trim());
+            // Group table rows into tables (include separator in match)
+            html = html.replace(/((?:__TABLE_ROW__.+?__TABLE_ROW_END__|__TABLE_SEPARATOR__)\n?)+/g, (match) => {
+                const rows = match.split(/\n/).filter(r => r.trim());
                 let isFirstRow = true;
                 let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 12px 0;">';
 
                 rows.forEach(row => {
-                    if (row === '__TABLE_SEPARATOR__') {
+                    if (row === '__TABLE_SEPARATOR__' || row.includes('__TABLE_SEPARATOR__')) {
                         isFirstRow = false;
                         return;
                     }
-                    const cleanRow = row.replace('__TABLE_ROW__', '');
+                    const cleanRow = row.replace('__TABLE_ROW__', '').replace('__TABLE_ROW_END__', '');
                     if (cleanRow.trim()) {
                         if (isFirstRow) {
                             tableHtml += '<thead><tr>' + cleanRow.replace(/<td>/g, '<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; font-weight: 600; text-align: left;">').replace(/<\/td>/g, '</th>') + '</tr></thead><tbody>';
