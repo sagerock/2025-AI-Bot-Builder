@@ -73,6 +73,19 @@ class DeleteResponse(BaseModel):
     message: str
 
 
+class CollectionInfo(BaseModel):
+    name: str
+    points_count: int
+    vectors_count: int
+    indexed_vectors_count: int
+    status: str
+
+
+class ListCollectionsResponse(BaseModel):
+    collections: List[CollectionInfo]
+    total_collections: int
+
+
 @router.post("/upload", response_model=UploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
@@ -93,9 +106,9 @@ async def upload_document(
         create_if_missing: Create collection if it doesn't exist
     """
     try:
-        # Validate file size (10MB limit)
+        # Validate file size (25MB limit for scanned documents)
         file_content = await file.read()
-        max_size = 10 * 1024 * 1024  # 10MB
+        max_size = 25 * 1024 * 1024  # 25MB
         if len(file_content) > max_size:
             raise HTTPException(
                 status_code=400,
@@ -197,7 +210,7 @@ async def upload_multiple_documents(
         results = []
         successful_files = 0
         failed_files = 0
-        max_size = 10 * 1024 * 1024  # 10MB per file
+        max_size = 25 * 1024 * 1024  # 25MB per file
 
         # Process each file
         for file in files:
@@ -551,4 +564,67 @@ async def delete_document(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete document: {str(e)}"
+        )
+
+
+@router.get("/collections", response_model=ListCollectionsResponse)
+async def list_collections(username: str = Depends(require_auth_dependency)):
+    """List all available Qdrant collections"""
+    try:
+        collections_data = qdrant_service.list_collections()
+
+        collections = [
+            CollectionInfo(
+                name=col["name"],
+                points_count=col["points_count"],
+                vectors_count=col.get("vectors_count", col["points_count"]),
+                indexed_vectors_count=col.get("indexed_vectors_count", col["points_count"]),
+                status=col.get("status", "ready")
+            )
+            for col in collections_data
+        ]
+
+        return ListCollectionsResponse(
+            collections=collections,
+            total_collections=len(collections)
+        )
+
+    except Exception as e:
+        print(f"List collections error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list collections: {str(e)}"
+        )
+
+
+@router.get("/collections/{collection_name}/info", response_model=CollectionInfo)
+async def get_collection_info(
+    collection_name: str,
+    username: str = Depends(require_auth_dependency)
+):
+    """Get detailed information about a specific collection"""
+    try:
+        if not qdrant_service.collection_exists(collection_name):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Collection '{collection_name}' not found"
+            )
+
+        info = qdrant_service.get_collection_info(collection_name)
+
+        return CollectionInfo(
+            name=collection_name,
+            points_count=info["points_count"],
+            vectors_count=info.get("vectors_count", info["points_count"]),
+            indexed_vectors_count=info.get("indexed_vectors_count", info["points_count"]),
+            status=info.get("status", "ready")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get collection info error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get collection info: {str(e)}"
         )

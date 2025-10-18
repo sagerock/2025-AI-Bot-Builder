@@ -27,10 +27,17 @@ python-3.12
 pip freeze > requirements.txt
 ```
 
+**Aptfile** (installs system dependencies for OCR - already included):
+```
+tesseract-ocr
+poppler-utils
+```
+This enables OCR support for scanned documents on Railway's Ubuntu containers.
+
 Commit these files:
 ```bash
-git add Procfile runtime.txt requirements.txt
-git commit -m "Add Railway deployment files"
+git add Procfile runtime.txt requirements.txt Aptfile
+git commit -m "Add Railway deployment files with OCR support"
 git push
 ```
 

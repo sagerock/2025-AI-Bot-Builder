@@ -7,6 +7,7 @@ from langchain.docstore.document import Document
 from pypdf import PdfReader
 from bs4 import BeautifulSoup
 import markdown
+from app.services.ocr_service import ocr_service
 
 
 class DocumentService:
@@ -15,19 +16,20 @@ class DocumentService:
     SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm'}
 
     @staticmethod
-    def extract_text_from_pdf(file_content: bytes) -> str:
-        """Extract text from PDF file"""
+    def extract_text_from_pdf(file_content: bytes, force_ocr: bool = False) -> str:
+        """
+        Extract text from PDF file, using OCR if necessary
+
+        Args:
+            file_content: Binary content of the PDF file
+            force_ocr: If True, always use OCR regardless of text detection
+
+        Returns:
+            Extracted text content
+        """
         try:
-            pdf_file = io.BytesIO(file_content)
-            pdf_reader = PdfReader(pdf_file)
-
-            text_parts = []
-            for page_num, page in enumerate(pdf_reader.pages, 1):
-                text = page.extract_text()
-                if text.strip():
-                    text_parts.append(f"[Page {page_num}]\n{text}")
-
-            return "\n\n".join(text_parts)
+            # Use OCR service which automatically detects if OCR is needed
+            return ocr_service.extract_text_from_pdf_with_ocr(file_content, force_ocr)
         except Exception as e:
             raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
