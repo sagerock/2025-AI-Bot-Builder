@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 import io
+import csv
 from pathlib import Path
 from datetime import datetime
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,7 +15,7 @@ from app.services.ocr_service import ocr_service
 class DocumentService:
     """Service for processing and chunking documents for vector storage"""
 
-    SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm', '.docx'}
+    SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm', '.docx', '.csv'}
 
     @staticmethod
     def extract_text_from_pdf(file_content: bytes, force_ocr: bool = False) -> str:
@@ -104,6 +105,44 @@ class DocumentService:
             raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
 
     @staticmethod
+    def extract_text_from_csv(file_content: bytes) -> str:
+        """
+        Extract text from CSV file
+
+        For structured data like Notion exports, each row is formatted with:
+        - Column headers as metadata context
+        - All column values combined into searchable text
+        - Rows separated by delimiters for chunking
+        """
+        try:
+            # Decode bytes to string
+            text = file_content.decode('utf-8-sig', errors='ignore')  # utf-8-sig handles BOM
+
+            # Parse CSV
+            reader = csv.DictReader(io.StringIO(text))
+
+            rows_text = []
+            for i, row in enumerate(reader, 1):
+                # Build a formatted entry for this row
+                row_parts = [f"=== Entry {i} ==="]
+
+                # Add all non-empty fields
+                for key, value in row.items():
+                    if value and value.strip():
+                        # Format: "Column Name: value"
+                        row_parts.append(f"{key}: {value.strip()}")
+
+                # Join this row's content
+                rows_text.append('\n'.join(row_parts))
+
+            # Combine all rows with clear separators
+            full_text = '\n\n---\n\n'.join(rows_text)
+
+            return full_text
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from CSV: {str(e)}")
+
+    @staticmethod
     def extract_text(filename: str, file_content: bytes) -> str:
         """
         Extract text from a file based on its extension
@@ -127,6 +166,8 @@ class DocumentService:
             return DocumentService.extract_text_from_txt(file_content)
         elif extension == '.docx':
             return DocumentService.extract_text_from_docx(file_content)
+        elif extension == '.csv':
+            return DocumentService.extract_text_from_csv(file_content)
         else:
             raise ValueError(f"Unsupported file type: {extension}")
 
