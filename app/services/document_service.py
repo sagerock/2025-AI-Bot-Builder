@@ -7,13 +7,14 @@ from langchain_core.documents import Document
 from pypdf import PdfReader
 from bs4 import BeautifulSoup
 import markdown
+from docx import Document as DocxDocument
 from app.services.ocr_service import ocr_service
 
 
 class DocumentService:
     """Service for processing and chunking documents for vector storage"""
 
-    SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm'}
+    SUPPORTED_EXTENSIONS = {'.pdf', '.txt', '.md', '.html', '.htm', '.docx'}
 
     @staticmethod
     def extract_text_from_pdf(file_content: bytes, force_ocr: bool = False) -> str:
@@ -77,6 +78,32 @@ class DocumentService:
             raise ValueError(f"Failed to extract text from TXT: {str(e)}")
 
     @staticmethod
+    def extract_text_from_docx(file_content: bytes) -> str:
+        """Extract text from DOCX file"""
+        try:
+            # Load document from bytes
+            doc = DocxDocument(io.BytesIO(file_content))
+
+            # Extract text from all paragraphs
+            paragraphs = [paragraph.text for paragraph in doc.paragraphs]
+
+            # Also extract text from tables
+            table_texts = []
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = ' | '.join(cell.text for cell in row.cells)
+                    table_texts.append(row_text)
+
+            # Combine paragraphs and tables
+            full_text = '\n'.join(paragraphs)
+            if table_texts:
+                full_text += '\n\nTables:\n' + '\n'.join(table_texts)
+
+            return full_text
+        except Exception as e:
+            raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
+
+    @staticmethod
     def extract_text(filename: str, file_content: bytes) -> str:
         """
         Extract text from a file based on its extension
@@ -98,6 +125,8 @@ class DocumentService:
             return DocumentService.extract_text_from_markdown(file_content)
         elif extension == '.txt':
             return DocumentService.extract_text_from_txt(file_content)
+        elif extension == '.docx':
+            return DocumentService.extract_text_from_docx(file_content)
         else:
             raise ValueError(f"Unsupported file type: {extension}")
 
