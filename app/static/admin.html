@@ -666,24 +666,9 @@
                 <div class="form-group">
                     <label>Model *</label>
                     <select id="bot-model" required>
-                        <optgroup label="Claude 4 (Latest Generation)">
-                            <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Best for agents & coding</option>
-                            <option value="claude-opus-4-1-20250514">Claude Opus 4.1 - Exceptional for complex tasks</option>
-                            <option value="claude-sonnet-4-20250514">Claude Sonnet 4 - High intelligence & speed</option>
-                            <option value="claude-opus-4-20250514">Claude Opus 4 - Very high capability</option>
-                        </optgroup>
-                        <optgroup label="Claude 3.7 (Extended Thinking)">
-                            <option value="claude-3-7-sonnet-20250219">Claude Sonnet 3.7</option>
-                        </optgroup>
-                        <optgroup label="Claude 3.5 (Previous Generation)">
-                            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku - Fastest</option>
-                        </optgroup>
-                        <optgroup label="Claude 3 (Legacy)">
-                            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                        </optgroup>
+                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding</option>
+                        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence</option>
+                        <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning</option>
                     </select>
                 </div>
 
@@ -1054,24 +1039,9 @@
 
             if (provider === 'anthropic') {
                 modelSelect.innerHTML = `
-                    <optgroup label="Claude 4 (Latest Generation)">
-                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Best for agents & coding</option>
-                        <option value="claude-opus-4-1-20250514">Claude Opus 4.1 - Exceptional for complex tasks</option>
-                        <option value="claude-sonnet-4-20250514">Claude Sonnet 4 - High intelligence & speed</option>
-                        <option value="claude-opus-4-20250514">Claude Opus 4 - Very high capability</option>
-                    </optgroup>
-                    <optgroup label="Claude 3.7 (Extended Thinking)">
-                        <option value="claude-3-7-sonnet-20250219">Claude Sonnet 3.7</option>
-                    </optgroup>
-                    <optgroup label="Claude 3.5 (Previous Generation)">
-                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku - Fastest</option>
-                    </optgroup>
-                    <optgroup label="Claude 3 (Legacy)">
-                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                        <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                    </optgroup>
+                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding</option>
+                    <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence</option>
+                    <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning</option>
                 `;
                 gpt5Settings.style.display = 'none';
             } else {
