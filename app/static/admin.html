@@ -666,9 +666,9 @@
                 <div class="form-group">
                     <label>Model *</label>
                     <select id="bot-model" required>
-                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding</option>
-                        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence</option>
-                        <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning</option>
+                        <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding ($3/$15 per MTok)</option>
+                        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence ($1/$5 per MTok)</option>
+                        <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning ($15/$75 per MTok)</option>
                     </select>
                 </div>
 
@@ -1039,9 +1039,9 @@
 
             if (provider === 'anthropic') {
                 modelSelect.innerHTML = `
-                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding</option>
-                    <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence</option>
-                    <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning</option>
+                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 - Smartest for agents & coding ($3/$15 per MTok)</option>
+                    <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 - Fastest with near-frontier intelligence ($1/$5 per MTok)</option>
+                    <option value="claude-opus-4-1-20250805">Claude Opus 4.1 - Exceptional for specialized reasoning ($15/$75 per MTok)</option>
                 `;
                 gpt5Settings.style.display = 'none';
             } else {
