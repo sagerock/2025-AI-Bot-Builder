@@ -35,11 +35,45 @@
             background: var(--bot-color, #0066CC);
             color: white;
             text-align: center;
+            position: relative;
         }
 
         .chat-header h1 {
             font-size: 20px;
             font-weight: 600;
+        }
+
+        .clear-memory-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clear-memory-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .clear-memory-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .clear-memory-btn svg {
+            width: 16px;
+            height: 16px;
         }
 
         .messages-container {
@@ -512,6 +546,13 @@
     <div class="chat-container">
         <div class="chat-header">
             <h1 id="chat-title">Chat</h1>
+            <button class="clear-memory-btn" onclick="clearMemory()" title="Start a new conversation">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                New Chat
+            </button>
         </div>
 
         <div class="messages-container" id="messages">
@@ -1006,6 +1047,49 @@
                 sendMessage();
             }
         });
+
+        // Clear conversation memory and start fresh
+        async function clearMemory() {
+            if (!sessionId) {
+                alert('No active conversation to clear.');
+                return;
+            }
+
+            const confirmClear = confirm('Are you sure you want to start a new conversation? This will clear the current chat history.');
+            if (!confirmClear) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat/${botId}/session/${sessionId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok || response.status === 204) {
+                    // Clear the UI
+                    const messagesContainer = document.getElementById('messages');
+                    messagesContainer.innerHTML = `
+                        <div class="greeting" id="greeting">
+                            Start a conversation...
+                        </div>
+                    `;
+
+                    // Generate a new session ID
+                    sessionId = null;
+                    localStorage.removeItem(`session_${botId}`);
+
+                    // Show success feedback
+                    const greeting = document.getElementById('greeting');
+                    greeting.textContent = 'Memory cleared! Starting fresh conversation...';
+                    setTimeout(() => {
+                        greeting.textContent = 'Start a conversation...';
+                    }, 2000);
+                } else {
+                    alert('Failed to clear memory. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error clearing memory:', error);
+                alert('Failed to clear memory. Please try again.');
+            }
+        }
 
         // Load bot config on start
         loadBotConfig();
