@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     default_openai_api_key: Optional[str] = None
 
     # Qdrant
-    qdrant_url: str = "http://localhost:6333"
+    qdrant_url: Optional[str] = None
     qdrant_api_key: Optional[str] = None
 
     class Config:
@@ -41,3 +41,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Debug logging for Qdrant configuration
+print(f"[CONFIG] Qdrant URL loaded: {settings.qdrant_url}")
+print(f"[CONFIG] Qdrant API Key loaded: {'***' + settings.qdrant_api_key[-4:] if settings.qdrant_api_key else 'None'}")
