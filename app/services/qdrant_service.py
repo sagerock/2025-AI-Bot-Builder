@@ -20,7 +20,10 @@ class QdrantService:
             try:
                 self.client = QdrantClient(
                     url=settings.qdrant_url,
-                    api_key=settings.qdrant_api_key
+                    api_key=settings.qdrant_api_key,
+                    timeout=120,
+                    prefer_grpc=False,
+                    https=True
                 )
             except Exception as e:
                 print(f"Warning: Could not connect to Qdrant: {e}")
