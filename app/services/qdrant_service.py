@@ -18,13 +18,16 @@ class QdrantService:
         self.client = None
         if settings.qdrant_url:
             try:
+                # Use a shorter timeout to avoid hanging the app startup
+                # The timeout applies per request, not just initialization
                 self.client = QdrantClient(
                     url=settings.qdrant_url,
                     api_key=settings.qdrant_api_key,
-                    timeout=120,
+                    timeout=30,  # 30 seconds per request
                     prefer_grpc=False,
                     https=True
                 )
+                print(f"Qdrant client initialized for {settings.qdrant_url}")
             except Exception as e:
                 print(f"Warning: Could not connect to Qdrant: {e}")
 
@@ -163,12 +166,11 @@ class QdrantService:
             }
 
         try:
-            # Try to list collections as a connection test
-            self.client.get_collections()
-            collections = self.list_collections()
+            # Try to list collections as a connection test (simple, no detailed info)
+            response = self.client.get_collections()
             return {
                 "connected": True,
-                "collections_count": len(collections),
+                "collections_count": len(response.collections) if response else 0,
                 "url": settings.qdrant_url
             }
         except Exception as e:
