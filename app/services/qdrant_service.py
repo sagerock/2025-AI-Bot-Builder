@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any
+from urllib.parse import urlparse
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     ScoredPoint,
@@ -18,16 +19,22 @@ class QdrantService:
         self.client = None
         if settings.qdrant_url:
             try:
-                # Use a shorter timeout to avoid hanging the app startup
-                # The timeout applies per request, not just initialization
+                # Parse URL to extract host and port
+                # Using host/port instead of url param fixes timeout issues on Windows
+                parsed = urlparse(settings.qdrant_url)
+                host = parsed.hostname
+                use_https = parsed.scheme == "https"
+                port = parsed.port or (443 if use_https else 6333)
+
                 self.client = QdrantClient(
-                    url=settings.qdrant_url,
+                    host=host,
+                    port=port,
                     api_key=settings.qdrant_api_key,
                     timeout=30,  # 30 seconds per request
                     prefer_grpc=False,
-                    https=True
+                    https=use_https
                 )
-                print(f"Qdrant client initialized for {settings.qdrant_url}")
+                print(f"Qdrant client initialized for {host}:{port} (https={use_https})")
             except Exception as e:
                 print(f"Warning: Could not connect to Qdrant: {e}")
 
