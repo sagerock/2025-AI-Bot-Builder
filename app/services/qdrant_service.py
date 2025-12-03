@@ -103,7 +103,7 @@ class QdrantService:
             return False
 
     def list_collections(self) -> List[dict]:
-        """List all available collections with their details"""
+        """List all available collections (lightweight - names only for speed)"""
         if not self.client:
             return []
 
@@ -111,25 +111,15 @@ class QdrantService:
             collections_response = self.client.get_collections()
             collections = []
 
+            # Just return collection names - don't fetch details for each one
+            # This makes listing much faster for cross-project Railway networking
             for collection in collections_response.collections:
-                try:
-                    # Get collection info
-                    info = self.client.get_collection(collection.name)
-                    collections.append({
-                        "name": collection.name,
-                        "vectors_count": info.vectors_count if (hasattr(info, 'vectors_count') and info.vectors_count is not None) else 0,
-                        "points_count": info.points_count if (hasattr(info, 'points_count') and info.points_count is not None) else 0,
-                        "status": str(info.status) if hasattr(info, 'status') else "unknown",
-                    })
-                except Exception as e:
-                    # If we can't get details, just add the name
-                    collections.append({
-                        "name": collection.name,
-                        "vectors_count": 0,
-                        "points_count": 0,
-                        "status": "unknown",
-                        "error": str(e)
-                    })
+                collections.append({
+                    "name": collection.name,
+                    "vectors_count": 0,  # Use get_collection_info() for details
+                    "points_count": 0,    # Use get_collection_info() for details
+                    "status": "available",
+                })
 
             return collections
         except Exception as e:
