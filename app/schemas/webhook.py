@@ -2,8 +2,8 @@
 Webhook Schemas
 Pydantic models for webhook API requests and responses
 """
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Any
 from datetime import datetime
 
 
@@ -38,22 +38,31 @@ class WebhookResponse(WebhookBase):
     last_status_code: Optional[int] = None
     last_error: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
-    def __init__(self, **data):
-        # Convert events string to list if needed
-        if 'events' in data and isinstance(data['events'], str):
-            data['events'] = [e.strip() for e in data['events'].split(',') if e.strip()]
+    @field_validator('events', mode='before')
+    @classmethod
+    def parse_events(cls, v: Any) -> List[str]:
+        """Convert comma-separated string to list"""
+        if isinstance(v, str):
+            return [e.strip() for e in v.split(',') if e.strip()]
+        return v
 
-        # Convert string fields to int if needed
-        if 'total_calls' in data and isinstance(data['total_calls'], str):
-            data['total_calls'] = int(data['total_calls']) if data['total_calls'].isdigit() else 0
+    @field_validator('total_calls', mode='before')
+    @classmethod
+    def parse_total_calls(cls, v: Any) -> int:
+        """Convert string to int"""
+        if isinstance(v, str):
+            return int(v) if v.isdigit() else 0
+        return v or 0
 
-        if 'last_status_code' in data and isinstance(data['last_status_code'], str):
-            data['last_status_code'] = int(data['last_status_code']) if data['last_status_code'] else None
-
-        super().__init__(**data)
+    @field_validator('last_status_code', mode='before')
+    @classmethod
+    def parse_status_code(cls, v: Any) -> Optional[int]:
+        """Convert string to int"""
+        if isinstance(v, str):
+            return int(v) if v.isdigit() else None
+        return v
 
 
 class WebhookPayload(BaseModel):
