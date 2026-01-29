@@ -884,12 +884,96 @@
         </div>
     </div>
 
-    <!-- Embed Code Modal -->
+    <!-- Embed Code Modal (now Deploy & Integrate) -->
     <div id="embed-modal" class="modal">
-        <div class="modal-content">
-            <h2>Bot Deployment</h2>
-            <div id="embed-content"></div>
-            <button class="btn btn-secondary" onclick="closeEmbedModal()">Close</button>
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>Deploy & Integrate</h2>
+
+            <!-- Modal Tabs -->
+            <div class="modal-tabs" style="display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #ddd;">
+                <button class="modal-tab active" onclick="switchDeployTab('embed')" data-tab="embed"
+                    style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid #0066CC; cursor: pointer; font-size: 14px; font-weight: 500; color: #0066CC;">
+                    Embed Code
+                </button>
+                <button class="modal-tab" onclick="switchDeployTab('webhooks')" data-tab="webhooks"
+                    style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #666;">
+                    Webhooks
+                </button>
+                <button class="modal-tab" onclick="switchDeployTab('api')" data-tab="api"
+                    style="padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #666;">
+                    API
+                </button>
+            </div>
+
+            <!-- Embed Tab Content -->
+            <div id="deploy-embed-tab" class="deploy-tab-content" style="display: block;">
+                <div id="embed-content"></div>
+            </div>
+
+            <!-- Webhooks Tab Content -->
+            <div id="deploy-webhooks-tab" class="deploy-tab-content" style="display: none;">
+                <div style="margin-bottom: 20px; padding: 15px; background: #f0f7ff; border-radius: 6px; border-left: 4px solid #0066CC;">
+                    <strong>Connect to Make.com, Zapier, or any webhook URL</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">
+                        Your bot will send events to your webhook URL when conversations happen.
+                    </p>
+                </div>
+
+                <!-- Add Webhook Form -->
+                <div id="webhook-form-section" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 15px 0; font-size: 15px;">Add New Webhook</h4>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px;">Webhook URL</label>
+                        <input type="url" id="webhook-url" placeholder="https://hook.make.com/xxxxx"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px;">Events to trigger</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="event-message-sent" value="message_sent" checked>
+                                Message sent (user)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="event-message-received" value="message_received" checked>
+                                Message received (bot)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="event-conversation-started" value="conversation_started">
+                                Conversation started
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                                <input type="checkbox" id="event-conversation-ended" value="conversation_ended">
+                                Conversation ended
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px;">
+                            Secret (optional)
+                            <span style="font-weight: normal; color: #666; font-size: 12px;">- for signature verification</span>
+                        </label>
+                        <input type="text" id="webhook-secret" placeholder="my-secret-key"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    </div>
+                    <button class="btn btn-primary" onclick="addWebhook()" style="width: 100%;">+ Add Webhook</button>
+                </div>
+
+                <!-- Active Webhooks List -->
+                <div id="webhooks-list-section">
+                    <h4 style="margin: 0 0 15px 0; font-size: 15px;">Active Webhooks</h4>
+                    <div id="webhooks-list">
+                        <div style="color: #666; padding: 20px; text-align: center;">Loading webhooks...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Tab Content -->
+            <div id="deploy-api-tab" class="deploy-tab-content" style="display: none;">
+                <div id="api-content"></div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeEmbedModal()" style="margin-top: 20px;">Close</button>
         </div>
     </div>
 
@@ -949,7 +1033,7 @@
                         ${bot.use_qdrant ? '<span class="badge badge-rag">RAG Enabled</span>' : ''}
                     </div>
                     <div class="bot-actions">
-                        <button class="btn btn-primary" onclick="showEmbedCode('${bot.id}')">Get Code</button>
+                        <button class="btn btn-primary" onclick="showEmbedCode('${bot.id}')">Deploy</button>
                         <button class="btn btn-secondary" onclick="editBot('${bot.id}')">Edit</button>
                         <button class="btn btn-danger" onclick="deleteBot('${bot.id}')">Delete</button>
                     </div>
@@ -1214,10 +1298,19 @@
             }
         }
 
+        // Current bot ID for the deploy modal
+        let deployModalBotId = null;
+
         function showEmbedCode(botId) {
+            deployModalBotId = botId;
             const chatUrl = `${API_BASE}/chat/${botId}`;
             const embedCode = '<script src="' + API_BASE + '/static/widget.js" data-bot-id="' + botId + '"><\/script>';
+            const chatApiUrl = `${API_BASE}/api/chat/${botId}`;
 
+            // Reset to Embed tab
+            switchDeployTab('embed');
+
+            // Embed Code tab content
             document.getElementById('embed-content').innerHTML = `
                 <div class="form-group">
                     <label>Standalone Chat URL:</label>
@@ -1231,7 +1324,258 @@
                 </div>
             `;
 
+            // API tab content
+            document.getElementById('api-content').innerHTML = `
+                <div style="margin-bottom: 20px; padding: 15px; background: #f0f7ff; border-radius: 6px; border-left: 4px solid #0066CC;">
+                    <strong>Send messages to your bot programmatically</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">
+                        Use these endpoints to integrate your bot with other applications.
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>Chat API Endpoint:</label>
+                    <div class="embed-code">${chatApiUrl}</div>
+                    <button class="btn btn-primary copy-btn" onclick="copyToClipboard('${chatApiUrl}')">Copy URL</button>
+                </div>
+                <div class="form-group">
+                    <label>Example Request (cURL):</label>
+                    <div class="embed-code" style="white-space: pre-wrap;">curl -X POST "${chatApiUrl}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"message": "Hello!"}'</div>
+                    <button class="btn btn-primary copy-btn" onclick="copyToClipboard(\`curl -X POST '${chatApiUrl}' -H 'Content-Type: application/json' -d '{\"message\": \"Hello!\"}'\`)">Copy cURL</button>
+                </div>
+                <div class="form-group">
+                    <label>Example Request (Make.com HTTP Module):</label>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-size: 13px;">
+                        <p style="margin: 0 0 10px 0;"><strong>URL:</strong> ${chatApiUrl}</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Method:</strong> POST</p>
+                        <p style="margin: 0 0 10px 0;"><strong>Headers:</strong> Content-Type: application/json</p>
+                        <p style="margin: 0;"><strong>Body:</strong> {"message": "Your message here"}</p>
+                    </div>
+                </div>
+            `;
+
+            // Load webhooks for this bot
+            loadBotWebhooks(botId);
+
             document.getElementById('embed-modal').style.display = 'block';
+        }
+
+        function switchDeployTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                if (tab.dataset.tab === tabName) {
+                    tab.style.borderBottomColor = '#0066CC';
+                    tab.style.color = '#0066CC';
+                    tab.classList.add('active');
+                } else {
+                    tab.style.borderBottomColor = 'transparent';
+                    tab.style.color = '#666';
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Update tab content
+            document.querySelectorAll('.deploy-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(`deploy-${tabName}-tab`).style.display = 'block';
+
+            // Load webhooks when switching to webhooks tab
+            if (tabName === 'webhooks' && deployModalBotId) {
+                loadBotWebhooks(deployModalBotId);
+            }
+        }
+
+        // ========================================
+        // WEBHOOK MANAGEMENT
+        // ========================================
+
+        async function loadBotWebhooks(botId) {
+            const container = document.getElementById('webhooks-list');
+            container.innerHTML = '<div style="color: #666; padding: 20px; text-align: center;">Loading webhooks...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/webhooks/bot/${botId}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        container.innerHTML = '<div style="color: #dc3545; padding: 20px;">Authentication required</div>';
+                        return;
+                    }
+                    throw new Error('Failed to load webhooks');
+                }
+
+                const webhooks = await response.json();
+                displayWebhooks(webhooks);
+            } catch (error) {
+                container.innerHTML = `<div style="color: #dc3545; padding: 20px;">Failed to load webhooks: ${error.message}</div>`;
+            }
+        }
+
+        function displayWebhooks(webhooks) {
+            const container = document.getElementById('webhooks-list');
+
+            if (webhooks.length === 0) {
+                container.innerHTML = '<div style="color: #666; padding: 20px; text-align: center; background: #f8f9fa; border-radius: 6px;">No webhooks configured yet. Add one above to get started!</div>';
+                return;
+            }
+
+            container.innerHTML = webhooks.map(webhook => {
+                const events = Array.isArray(webhook.events) ? webhook.events : webhook.events.split(',');
+                const eventLabels = events.map(e => {
+                    const labels = {
+                        'message_sent': 'Message sent',
+                        'message_received': 'Message received',
+                        'conversation_started': 'Conv. started',
+                        'conversation_ended': 'Conv. ended'
+                    };
+                    return labels[e.trim()] || e.trim();
+                }).join(', ');
+
+                const lastCalled = webhook.last_called_at
+                    ? new Date(webhook.last_called_at).toLocaleString()
+                    : 'Never';
+
+                const statusColor = webhook.last_status_code
+                    ? (webhook.last_status_code >= 200 && webhook.last_status_code < 300 ? '#28a745' : '#dc3545')
+                    : '#666';
+
+                const statusText = webhook.last_status_code
+                    ? `${webhook.last_status_code}`
+                    : 'N/A';
+
+                return `
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 10px; ${!webhook.is_active ? 'opacity: 0.6;' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div style="flex: 1; overflow: hidden;">
+                                <div style="font-family: monospace; font-size: 12px; color: #333; word-break: break-all;">${webhook.url}</div>
+                            </div>
+                            <div style="display: flex; gap: 5px; margin-left: 10px;">
+                                <button class="btn btn-secondary" onclick="toggleWebhook('${webhook.id}', ${!webhook.is_active})"
+                                    style="font-size: 11px; padding: 4px 8px;">
+                                    ${webhook.is_active ? 'Disable' : 'Enable'}
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteWebhook('${webhook.id}')"
+                                    style="font-size: 11px; padding: 4px 8px;">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: #666;">
+                            <span style="margin-right: 15px;"><strong>Events:</strong> ${eventLabels}</span>
+                        </div>
+                        <div style="font-size: 11px; color: #999; margin-top: 8px;">
+                            Last called: ${lastCalled}
+                            ${webhook.last_status_code ? ` | Status: <span style="color: ${statusColor}; font-weight: 500;">${statusText}</span>` : ''}
+                            ${webhook.last_error ? ` | <span style="color: #dc3545;">Error: ${webhook.last_error.substring(0, 50)}...</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function addWebhook() {
+            const url = document.getElementById('webhook-url').value.trim();
+            const secret = document.getElementById('webhook-secret').value.trim();
+
+            if (!url) {
+                showError('Please enter a webhook URL');
+                return;
+            }
+
+            // Validate URL
+            try {
+                new URL(url);
+            } catch {
+                showError('Please enter a valid URL');
+                return;
+            }
+
+            // Collect selected events
+            const events = [];
+            if (document.getElementById('event-message-sent').checked) events.push('message_sent');
+            if (document.getElementById('event-message-received').checked) events.push('message_received');
+            if (document.getElementById('event-conversation-started').checked) events.push('conversation_started');
+            if (document.getElementById('event-conversation-ended').checked) events.push('conversation_ended');
+
+            if (events.length === 0) {
+                showError('Please select at least one event');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/webhooks/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        bot_id: deployModalBotId,
+                        url: url,
+                        events: events,
+                        secret: secret || null,
+                        description: 'Created from admin UI'
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create webhook');
+                }
+
+                // Clear form
+                document.getElementById('webhook-url').value = '';
+                document.getElementById('webhook-secret').value = '';
+
+                showSuccess('Webhook added successfully!');
+                loadBotWebhooks(deployModalBotId);
+            } catch (error) {
+                showError('Failed to add webhook: ' + error.message);
+            }
+        }
+
+        async function deleteWebhook(webhookId) {
+            if (!confirm('Are you sure you want to delete this webhook?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/webhooks/${webhookId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete webhook');
+                }
+
+                showSuccess('Webhook deleted');
+                loadBotWebhooks(deployModalBotId);
+            } catch (error) {
+                showError('Failed to delete webhook: ' + error.message);
+            }
+        }
+
+        async function toggleWebhook(webhookId, isActive) {
+            try {
+                const response = await fetch(`${API_BASE}/api/webhooks/${webhookId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ is_active: isActive })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update webhook');
+                }
+
+                showSuccess(`Webhook ${isActive ? 'enabled' : 'disabled'}`);
+                loadBotWebhooks(deployModalBotId);
+            } catch (error) {
+                showError('Failed to update webhook: ' + error.message);
+            }
         }
 
         function copyToClipboard(text) {
