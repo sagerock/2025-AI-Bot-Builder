@@ -46,11 +46,15 @@ class MemoryService:
         rag_context: Optional[str] = None
     ) -> Message:
         """Add a message to conversation"""
+        # PostgreSQL does not allow NUL (0x00) bytes in text columns
+        clean_content = content.replace('\x00', '') if content else content
+        clean_rag = rag_context.replace('\x00', '') if rag_context else rag_context
+
         message = Message(
             conversation_id=conversation_id,
             role=role,
-            content=content,
-            rag_context=rag_context
+            content=clean_content,
+            rag_context=clean_rag
         )
         db.add(message)
         db.commit()
