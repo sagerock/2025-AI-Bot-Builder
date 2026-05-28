@@ -1,3 +1,4 @@
+import json
 from typing import Optional, List
 from anthropic import Anthropic
 from openai import OpenAI
@@ -6,6 +7,7 @@ from app.schemas.chat import ChatMessage
 from app.services.qdrant_service import qdrant_service
 from app.services.embedding_service import embedding_service
 from app.config import settings
+from app.tools import TOOL_REGISTRY, get_anthropic_schemas
 
 
 class ChatService:
@@ -98,6 +100,8 @@ User question: {user_message}"""
 
         return messages
 
+    MAX_TOOL_ITERATIONS = 10
+
     @staticmethod
     def chat_with_anthropic(
         bot: Bot,
@@ -106,23 +110,112 @@ User question: {user_message}"""
         rag_contexts: Optional[List[str]] = None,
         image_data: Optional[dict] = None
     ) -> str:
-        """Send chat request to Anthropic"""
+        """Send chat request to Anthropic.
+
+        If bot.tools_enabled is non-empty, runs a tool-use loop:
+          1. Call model with tools=
+          2. If stop_reason=tool_use, execute each tool call, append results
+          3. Recall the model with the updated messages
+          4. Repeat until end_turn or MAX_TOOL_ITERATIONS
+
+        If bot.tools_enabled is empty, runs the legacy single-shot chat.
+        """
         api_key = ChatService.get_bot_api_key(bot)
         client = Anthropic(api_key=api_key)
 
         messages = ChatService.build_messages_with_context(
             user_message, history, rag_contexts, image_data
         )
+        system_prompt = ChatService.build_system_prompt(bot)
+        temperature = bot.temperature / 100.0
 
-        response = client.messages.create(
-            model=bot.model,
-            max_tokens=bot.max_tokens,
-            temperature=bot.temperature / 100.0,  # Convert 0-100 to 0.0-1.0
-            system=ChatService.build_system_prompt(bot),
-            messages=messages
+        tools_enabled = getattr(bot, "tools_enabled", None) or []
+        tool_config = getattr(bot, "tool_config", None) or {}
+
+        # Legacy path: no tools, single-shot
+        if not tools_enabled:
+            response = client.messages.create(
+                model=bot.model,
+                max_tokens=bot.max_tokens,
+                temperature=temperature,
+                system=system_prompt,
+                messages=messages,
+            )
+            return response.content[0].text
+
+        # Tool-use loop
+        tools_schemas = get_anthropic_schemas(tools_enabled)
+        for iteration in range(ChatService.MAX_TOOL_ITERATIONS):
+            response = client.messages.create(
+                model=bot.model,
+                max_tokens=bot.max_tokens,
+                temperature=temperature,
+                system=system_prompt,
+                messages=messages,
+                tools=tools_schemas,
+            )
+
+            if response.stop_reason != "tool_use":
+                # Final answer; collect any text blocks
+                text_parts = [b.text for b in response.content if b.type == "text"]
+                return "\n".join(text_parts) if text_parts else ""
+
+            # Execute each tool_use block and append assistant + tool results
+            messages.append({"role": "assistant", "content": [
+                ChatService._block_to_dict(b) for b in response.content
+            ]})
+
+            tool_results = []
+            for block in response.content:
+                if block.type != "tool_use":
+                    continue
+                tool_name = block.name
+                tool_input = block.input or {}
+                if tool_name in TOOL_REGISTRY:
+                    try:
+                        result = TOOL_REGISTRY[tool_name].run(tool_input, tool_config)
+                        result_str = ChatService._tool_result_to_string(result)
+                    except Exception as e:
+                        result_str = f'{{"error": "tool_execution_failed", "detail": "{e}"}}'
+                else:
+                    result_str = f'{{"error": "unknown_tool", "name": "{tool_name}"}}'
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result_str,
+                })
+            messages.append({"role": "user", "content": tool_results})
+
+        # Hit the iteration cap — return a graceful fallback
+        return (
+            "I'm having trouble finishing that thought right now. "
+            "Could you rephrase, or would you like me to connect you with Sage directly?"
         )
 
-        return response.content[0].text
+    @staticmethod
+    def _block_to_dict(block) -> dict:
+        """Convert an Anthropic content block (SDK object) to the dict shape needed for messages."""
+        if block.type == "text":
+            return {"type": "text", "text": block.text}
+        if block.type == "tool_use":
+            return {
+                "type": "tool_use",
+                "id": block.id,
+                "name": block.name,
+                "input": block.input,
+            }
+        # Fallback: serialize whatever attributes we can see
+        return {"type": block.type}
+
+    @staticmethod
+    def _tool_result_to_string(result) -> str:
+        """Tool results must be strings for Anthropic. Serialize dicts to JSON."""
+        if isinstance(result, str):
+            return result
+        try:
+            return json.dumps(result, default=str)
+        except Exception:
+            return str(result)
 
     @staticmethod
     def is_gpt5_model(model: str) -> bool:
