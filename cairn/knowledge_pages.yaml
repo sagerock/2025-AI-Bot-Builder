@@ -11,9 +11,8 @@ pages:
     label: SageRock homepage
   - url: https://sagerock.com/schools/
     label: SageRock Schools (product page)
-  - url: https://sagerock.com/about/
-    label: About Sage
   - url: https://sagerock.com/contact/
     label: Contact / how to reach Sage
+  # /about/ removed 2026-05-28: page returned 404. Add back when it exists.
   # Add more URLs as content goes live. Each new entry indexes on the next
   # seed_qdrant.py run (the script clears the collection and re-seeds).
