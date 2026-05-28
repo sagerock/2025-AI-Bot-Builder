@@ -2620,7 +2620,12 @@
 
 <script>
   function openHelpModal() {
-    document.getElementById('helpModal').style.display = 'flex';
+    const modal = document.getElementById('helpModal');
+    modal.style.display = 'flex';
+    modal.onclick = (e) => {
+      // Click on the overlay (the modal div itself) but not the panel
+      if (e.target === modal) closeHelpModal();
+    };
     showHelpTab('tools');
   }
   function closeHelpModal() {
@@ -2664,9 +2669,92 @@
   }
 
   // Static help content as template strings (filled in Task 3)
-  const ENV_VARS_HTML = `<p>Loading...</p>`;
-  const TOOL_CONFIG_HTML = `<p>Loading...</p>`;
-  const QUICK_START_HTML = `<p>Loading...</p>`;
+  const ENV_VARS_HTML = `
+  <h3>Required environment variables</h3>
+  <p>Set these in Railway (Service → Variables) for the bot builder service.
+  Tools degrade gracefully when their vars are missing — they return an
+  error code instead of crashing the chat.</p>
+  <table>
+    <thead><tr><th>Var</th><th>Used by</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td>core</td><td>SQLAlchemy connection string (Postgres on Railway)</td></tr>
+      <tr><td><code>DEFAULT_ANTHROPIC_API_KEY</code></td><td>core</td><td>Fallback when bot.api_key is unset</td></tr>
+      <tr><td><code>DEFAULT_OPENAI_API_KEY</code></td><td>core</td><td>Fallback for OpenAI bots</td></tr>
+      <tr><td><code>QDRANT_URL</code></td><td>RAG</td><td>Shared Qdrant cluster URL</td></tr>
+      <tr><td><code>QDRANT_API_KEY</code></td><td>RAG</td><td>Shared Qdrant API key</td></tr>
+      <tr><td><code>CAL_COM_API_KEY</code></td><td>check_availability, book_meeting</td><td>Get one at cal.com → Settings → Developer → API keys</td></tr>
+      <tr><td><code>SUPABASE_URL</code></td><td>capture_lead</td><td>Mail tool project URL (project ref ckloewflialohuvixmvd)</td></tr>
+      <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>capture_lead</td><td>Server-side only — never expose</td></tr>
+      <tr><td><code>SENDGRID_API_KEY</code></td><td>escalate_to_sage</td><td>Required for escalation emails</td></tr>
+    </tbody>
+  </table>
+`;
+
+  const TOOL_CONFIG_HTML = `
+  <h3>tool_config (per-bot JSON)</h3>
+  <p>Each bot's <code>tool_config</code> field holds the non-secret settings
+  for the tools it enables. Secrets live in environment variables; this
+  JSON tells each tool which env var to read and which collection / event
+  type / client to act on.</p>
+  <p><strong>Example for Cairn (SageRock concierge):</strong></p>
+  <pre>{
+  "qdrant": {"collection": "sagerock", "top_k": 5},
+  "cal_com": {
+    "api_key_env": "CAL_COM_API_KEY",
+    "event_type_slug": "opportunity-call-30",
+    "timezone": "America/New_York"
+  },
+  "supabase": {
+    "url_env": "SUPABASE_URL",
+    "service_key_env": "SUPABASE_SERVICE_ROLE_KEY",
+    "client_id": "&lt;sagerock client uuid in mail tool Supabase&gt;"
+  },
+  "escalation": {"to_email": "sage@sagerock.com"},
+  "sendgrid": {
+    "api_key_env": "SENDGRID_API_KEY",
+    "from_email": "cairn@ask.sagerock.com"
+  }
+}</pre>
+  <h3>Field reference</h3>
+  <ul>
+    <li><code>qdrant.collection</code> — name of the Qdrant collection to search</li>
+    <li><code>qdrant.top_k</code> — how many chunks to return per search</li>
+    <li><code>cal_com.event_type_slug</code> — the Cal.com event type to book against</li>
+    <li><code>cal_com.timezone</code> — IANA timezone (e.g. America/New_York)</li>
+    <li><code>supabase.client_id</code> — Supabase contacts.client_id this bot writes leads under</li>
+    <li><code>escalation.to_email</code> — where escalate_to_sage sends mail</li>
+    <li><code>sendgrid.from_email</code> — From: address on escalation emails (must be a verified sender)</li>
+  </ul>
+`;
+
+  const QUICK_START_HTML = `
+  <h3>Create a new tool-using bot</h3>
+  <ol>
+    <li>Click <strong>Create New Bot</strong> and fill in name, provider, model, system prompt as usual.</li>
+    <li>In the new bot's edit form, set:
+      <ul>
+        <li><code>tools_enabled</code> — JSON array of tool names from the Tools tab (e.g. <code>["search_knowledge","book_meeting"]</code>)</li>
+        <li><code>tool_config</code> — JSON object matching the Tool config tab (only include the keys for tools this bot actually enables)</li>
+      </ul>
+    </li>
+    <li>Set required env vars in Railway for the tools you enabled (see Env vars tab).</li>
+    <li>Test by chatting at <code>/chat/&lt;bot_id&gt;</code> — when the LLM calls a tool, it'll appear in the response.</li>
+  </ol>
+  <h3>Embedding a bot widget</h3>
+  <p>Each bot has an embed snippet on its edit page (Deploy &amp; Integrate). Paste the snippet on any page; the floating widget appears in the corner.</p>
+  <h3>Troubleshooting</h3>
+  <ul>
+    <li><strong>500 on /api/bots after deploy</strong> — usually a missing column. Check Railway logs for "column does not exist". Fix by adding to migrate_db.py and pushing.</li>
+    <li><strong>Tool always returns error code</strong> — env var probably not set in Railway. Check the Env vars tab.</li>
+    <li><strong>RAG bot returns generic answers</strong> — Qdrant collection may not be populated. Run the relevant seed script in <code>cairn/</code> or equivalent.</li>
+  </ul>
+`;
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('helpModal').style.display === 'flex') {
+      closeHelpModal();
+    }
+  });
 </script>
 </body>
 </html>
