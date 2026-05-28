@@ -57,7 +57,8 @@ def cairn_config() -> dict:
             "qdrant": {"collection": "sagerock", "top_k": 5},
             "cal_com": {
                 "api_key_env": "CAL_COM_API_KEY",
-                "event_type_slug": "opportunity-call-30",
+                # Sage's actual event type on cal.com/sage-lewis-hxrfpr/30min
+                "event_type_slug": "30min",
                 "timezone": "America/New_York",
             },
             "supabase": {
