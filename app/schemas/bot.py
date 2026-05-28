@@ -82,6 +82,11 @@ class BotBase(BaseModel):
     widget_color: str = Field(default="#0066CC", pattern="^#[0-9A-Fa-f]{6}$")
     widget_greeting: Optional[str] = None
 
+    # Tools
+    tools_enabled: list[str] = Field(default_factory=list)
+    tool_config: dict = Field(default_factory=dict)
+    suggested_prompts: list[str] = Field(default_factory=list)
+
 
 class BotCreate(BotBase):
     api_key: Optional[str] = Field(None, min_length=1)  # Legacy support
@@ -109,6 +114,9 @@ class BotUpdate(BaseModel):
     widget_title: Optional[str] = None
     widget_color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     widget_greeting: Optional[str] = None
+    tools_enabled: Optional[list[str]] = None
+    tool_config: Optional[dict] = None
+    suggested_prompts: Optional[list[str]] = None
     is_active: Optional[bool] = None
 
 
