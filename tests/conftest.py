@@ -28,6 +28,7 @@ def fake_bot_with_tools():
             "qdrant": {"collection": "sagerock", "top_k": 5},
             "cal_com": {"api_key_env": "CAL_COM_API_KEY",
                         "event_type_slug": "opportunity-call-30",
+                        "username": "sage-lewis",
                         "timezone": "America/New_York"},
             "supabase": {"url_env": "SUPABASE_URL",
                          "service_key_env": "SUPABASE_SERVICE_ROLE_KEY",

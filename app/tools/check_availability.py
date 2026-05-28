@@ -13,7 +13,7 @@ def run(inputs: dict, config: dict) -> dict:
     """Return open slots for the Cal.com event in the given date window.
 
     inputs: {"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}
-    config: {"cal_com": {"api_key_env", "event_type_slug", "timezone"}}
+    config: {"cal_com": {"api_key_env", "event_type_slug", "username", "timezone"}}
     returns: {"slots": [iso_string, ...]} or {"slots": [], "error": "..."}
     """
     cfg = config.get("cal_com", {})
@@ -22,17 +22,23 @@ def run(inputs: dict, config: dict) -> dict:
     if not api_key:
         return {"slots": [], "error": "calcom_not_configured"}
 
-    event_slug = cfg.get("event_type_slug", "opportunity-call-30")
+    event_slug = cfg.get("event_type_slug")
+    username = cfg.get("username")
     timezone = cfg.get("timezone", "America/New_York")
     start = inputs.get("start_date")
     end = inputs.get("end_date")
     if not start or not end:
         return {"slots": [], "error": "missing_date_range"}
+    if not event_slug or not username:
+        # Cal.com v2 /slots requires either eventTypeId or (eventTypeSlug+username).
+        # We use the slug+username path; both must be set in tool_config.
+        return {"slots": [], "error": "calcom_not_configured"}
 
     params = {
         "eventTypeSlug": event_slug,
-        "startTime": f"{start}T00:00:00.000Z",
-        "endTime": f"{end}T23:59:59.999Z",
+        "username": username,
+        "start": f"{start}T00:00:00.000Z",
+        "end": f"{end}T23:59:59.999Z",
         "timeZone": timezone,
     }
     headers = {

@@ -13,12 +13,18 @@ def run(inputs: dict, config: dict) -> dict:
     """Create a Cal.com booking.
 
     inputs: {name, email, start_time, topic, notes (optional)}
-    config: {"cal_com": {"api_key_env", "event_type_slug", "timezone"}}
+    config: {"cal_com": {"api_key_env", "event_type_slug", "username", "timezone"}}
     returns: {confirmed: bool, booking_id?, invite_url?, error?}
     """
     cfg = config.get("cal_com", {})
     api_key = os.getenv(cfg.get("api_key_env", "CAL_COM_API_KEY"))
     if not api_key:
+        return {"confirmed": False, "error": "calcom_not_configured"}
+
+    event_slug = cfg.get("event_type_slug")
+    username = cfg.get("username")
+    if not event_slug or not username:
+        # Cal.com v2 /bookings requires eventTypeId or (eventTypeSlug + username).
         return {"confirmed": False, "error": "calcom_not_configured"}
 
     name = inputs.get("name", "").strip()
@@ -31,7 +37,8 @@ def run(inputs: dict, config: dict) -> dict:
         return {"confirmed": False, "error": "missing_required_fields"}
 
     payload = {
-        "eventTypeSlug": cfg.get("event_type_slug", "opportunity-call-30"),
+        "eventTypeSlug": event_slug,
+        "username": username,
         "start": start_time,
         "attendee": {
             "name": name,
@@ -42,7 +49,7 @@ def run(inputs: dict, config: dict) -> dict:
     }
     headers = {
         "Authorization": f"Bearer {api_key}",
-        "cal-api-version": "2024-08-13",
+        "cal-api-version": "2026-02-25",
         "Content-Type": "application/json",
     }
 

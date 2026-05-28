@@ -30,6 +30,7 @@ def test_successful_booking_returns_confirmation():
             {"cal_com": {
                 "api_key_env": "CAL_COM_API_KEY",
                 "event_type_slug": "opportunity-call-30",
+                "username": "sage-lewis",
                 "timezone": "America/New_York",
             }},
         )
@@ -59,6 +60,7 @@ def test_slot_taken_returns_error():
             },
             {"cal_com": {"api_key_env": "CAL_COM_API_KEY",
                           "event_type_slug": "opportunity-call-30",
+                          "username": "sage-lewis",
                           "timezone": "America/New_York"}},
         )
 
@@ -74,6 +76,7 @@ def test_missing_required_fields():
             {"email": "jane@x.com", "start_time": "2026-06-01T14:00:00.000Z", "topic": "x"},
             {"cal_com": {"api_key_env": "CAL_COM_API_KEY",
                           "event_type_slug": "opportunity-call-30",
+                          "username": "sage-lewis",
                           "timezone": "America/New_York"}},
         )
 

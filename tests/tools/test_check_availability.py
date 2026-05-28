@@ -31,6 +31,7 @@ def test_returns_iso_slots_on_success():
             {"cal_com": {
                 "api_key_env": "CAL_COM_API_KEY",
                 "event_type_slug": "opportunity-call-30",
+                "username": "sage-lewis",
                 "timezone": "America/New_York",
             }},
         )
@@ -55,6 +56,7 @@ def test_returns_empty_on_api_error():
             {"start_date": "2026-06-01", "end_date": "2026-06-02"},
             {"cal_com": {"api_key_env": "CAL_COM_API_KEY",
                           "event_type_slug": "opportunity-call-30",
+                          "username": "sage-lewis",
                           "timezone": "America/New_York"}},
         )
 
@@ -68,6 +70,7 @@ def test_returns_empty_when_api_key_missing():
             {"start_date": "2026-06-01", "end_date": "2026-06-02"},
             {"cal_com": {"api_key_env": "CAL_COM_API_KEY",
                           "event_type_slug": "opportunity-call-30",
+                          "username": "sage-lewis",
                           "timezone": "America/New_York"}},
         )
     assert result == {"slots": [], "error": "calcom_not_configured"}
