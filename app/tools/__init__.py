@@ -1,6 +1,12 @@
 """Tool registry. Import this module to access all registered tools."""
 from app.tools.base import Tool
-from app.tools import search_knowledge, check_availability, book_meeting, capture_lead  # noqa: F401
+from app.tools import (
+    search_knowledge,
+    check_availability,
+    book_meeting,
+    capture_lead,
+    escalate_to_sage,
+)  # noqa: F401
 
 # As tools are added in later tasks, import them above this line and add to REGISTRY below.
 TOOL_REGISTRY: dict[str, Tool] = {
@@ -8,6 +14,7 @@ TOOL_REGISTRY: dict[str, Tool] = {
     check_availability.TOOL.name: check_availability.TOOL,
     book_meeting.TOOL.name: book_meeting.TOOL,
     capture_lead.TOOL.name: capture_lead.TOOL,
+    escalate_to_sage.TOOL.name: escalate_to_sage.TOOL,
 }
 
 
