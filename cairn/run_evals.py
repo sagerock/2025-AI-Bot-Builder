@@ -58,9 +58,10 @@ def run_one_eval(base_url: str, bot_id: str, eval_path: Path) -> tuple[str, list
             user_message = turn["user"]
             expect = turn.get("expect", {})
 
+            # Bot builder's chat endpoint uses Form() params, not JSON.
             response = client.post(
                 f"{base_url}/api/chat/{bot_id}",
-                json={"message": user_message, "session_id": session_id},
+                data={"message": user_message, "session_id": session_id},
             )
             if response.status_code != 200:
                 all_failures.append(f"turn {i+1}: HTTP {response.status_code} - {response.text[:200]}")
