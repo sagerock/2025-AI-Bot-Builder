@@ -4,22 +4,22 @@ from unittest.mock import patch, MagicMock
 from app.tools import check_availability
 
 
-def test_returns_iso_slots_on_success():
-    """check_availability hits Cal.com API and returns ISO timestamps."""
+def test_returns_iso_slots_on_success_v2_default_shape():
+    """check_availability parses Cal.com v2's default response: data is a
+    map of date_str -> [iso_string, ...] (slots are bare strings)."""
     fake_response = MagicMock()
     fake_response.status_code = 200
     fake_response.json.return_value = {
+        "status": "success",
         "data": {
-            "slots": {
-                "2026-06-01": [
-                    {"time": "2026-06-01T14:00:00.000Z"},
-                    {"time": "2026-06-01T15:00:00.000Z"},
-                ],
-                "2026-06-02": [
-                    {"time": "2026-06-02T10:00:00.000Z"},
-                ],
-            }
-        }
+            "2026-06-01": [
+                "2026-06-01T14:00:00.000Z",
+                "2026-06-01T15:00:00.000Z",
+            ],
+            "2026-06-02": [
+                "2026-06-02T10:00:00.000Z",
+            ],
+        },
     }
 
     with patch.dict(os.environ, {"CAL_COM_API_KEY": "cal_test_key"}), \
@@ -44,6 +44,33 @@ def test_returns_iso_slots_on_success():
     # Verify it called the right endpoint
     args, kwargs = mock_get.call_args
     assert "slots" in args[0] or "slots" in kwargs.get("url", "")
+
+
+def test_handles_legacy_nested_slots_response():
+    """Defensively handle the older data.slots shape with object slots."""
+    fake_response = MagicMock()
+    fake_response.status_code = 200
+    fake_response.json.return_value = {
+        "data": {
+            "slots": {
+                "2026-06-01": [{"time": "2026-06-01T14:00:00.000Z"}]
+            }
+        }
+    }
+
+    with patch.dict(os.environ, {"CAL_COM_API_KEY": "cal_test_key"}), \
+         patch("app.tools.check_availability.httpx.get") as mock_get:
+        mock_get.return_value = fake_response
+
+        result = check_availability.TOOL.run(
+            {"start_date": "2026-06-01", "end_date": "2026-06-02"},
+            {"cal_com": {"api_key_env": "CAL_COM_API_KEY",
+                          "event_type_slug": "opportunity-call-30",
+                          "username": "sage-lewis",
+                          "timezone": "America/New_York"}},
+        )
+
+    assert result["slots"] == ["2026-06-01T14:00:00.000Z"]
 
 
 def test_returns_empty_on_api_error():

@@ -61,13 +61,27 @@ def run(inputs: dict, config: dict) -> dict:
         logger.warning(f"check_availability: request failed: {e}")
         return {"slots": [], "error": "calcom_unavailable"}
 
-    slots_by_day = data.get("data", {}).get("slots", {})
+    # Cal.com v2 default format: data.data is a map of date_str -> [iso_string, ...]
+    # Range format: each slot is {"start": ..., "end": ...} instead of a bare string.
+    # Older versions used data.data.slots -> {date_str: [{"time": ...}]} which we
+    # also handle defensively here.
+    raw_data = data.get("data", {})
+    if "slots" in raw_data and isinstance(raw_data.get("slots"), dict):
+        # Legacy nested shape
+        slots_by_day = raw_data["slots"]
+    else:
+        slots_by_day = raw_data
     slots = []
     for day_slots in slots_by_day.values():
+        if not isinstance(day_slots, list):
+            continue
         for slot in day_slots:
-            t = slot.get("time")
-            if t:
-                slots.append(t)
+            if isinstance(slot, str):
+                slots.append(slot)
+            elif isinstance(slot, dict):
+                t = slot.get("start") or slot.get("time")
+                if t:
+                    slots.append(t)
     return {"slots": slots}
 
 
