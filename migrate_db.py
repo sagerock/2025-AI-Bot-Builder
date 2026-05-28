@@ -66,6 +66,44 @@ def run_migrations():
         else:
             print("  ⏭️  text_verbosity column already exists")
 
+        # Migration: Add tools_enabled / tool_config / suggested_prompts to bots table (Cairn)
+        # JSON columns: JSONB on Postgres, TEXT on SQLite.
+        is_sqlite = engine.dialect.name == 'sqlite'
+        json_type = "TEXT" if is_sqlite else "JSONB"
+
+        if not column_exists('bots', 'tools_enabled'):
+            print("  ➕ Adding tools_enabled column to bots table...")
+            conn.execute(text(
+                f"ALTER TABLE bots ADD COLUMN tools_enabled {json_type} DEFAULT '[]' NOT NULL"
+            ))
+            conn.commit()
+            migrations_run += 1
+            print("     ✅ Done")
+        else:
+            print("  ⏭️  tools_enabled column already exists")
+
+        if not column_exists('bots', 'tool_config'):
+            print("  ➕ Adding tool_config column to bots table...")
+            conn.execute(text(
+                f"ALTER TABLE bots ADD COLUMN tool_config {json_type} DEFAULT '{{}}' NOT NULL"
+            ))
+            conn.commit()
+            migrations_run += 1
+            print("     ✅ Done")
+        else:
+            print("  ⏭️  tool_config column already exists")
+
+        if not column_exists('bots', 'suggested_prompts'):
+            print("  ➕ Adding suggested_prompts column to bots table...")
+            conn.execute(text(
+                f"ALTER TABLE bots ADD COLUMN suggested_prompts {json_type} DEFAULT '[]' NOT NULL"
+            ))
+            conn.commit()
+            migrations_run += 1
+            print("     ✅ Done")
+        else:
+            print("  ⏭️  suggested_prompts column already exists")
+
         # Migration: Create webhooks table
         if not table_exists('webhooks'):
             print("  ➕ Creating webhooks table...")
