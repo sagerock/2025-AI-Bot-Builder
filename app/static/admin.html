@@ -452,6 +452,34 @@
             margin-bottom: 8px;
             color: #4FC3F7;
         }
+
+        .tools-checkbox-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .tools-checkbox-list label {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-weight: normal;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .tools-checkbox-list input[type="checkbox"] {
+            margin-top: 3px;
+        }
+        .tools-checkbox-list .tool-name {
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-weight: 600;
+        }
+        @media (max-width: 600px) {
+            .tools-checkbox-list { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -850,6 +878,28 @@
                     <input type="color" id="bot-widget-color" value="#0066CC">
                 </div>
 
+                <div class="form-group">
+                    <label>Tools Enabled</label>
+                    <div id="toolsEnabledCheckboxes" class="tools-checkbox-list">
+                        <p style="color:#888; font-size:13px;">Loading available tools...</p>
+                    </div>
+                    <small style="display:block; margin-top:6px; color:#666;">Tools that this bot can call mid-conversation. See the Help panel for what each does.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="toolConfig">Tool Config (JSON)</label>
+                    <textarea id="toolConfig" name="tool_config" rows="14" style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size:13px;" placeholder='{ "cal_com": { ... }, "qdrant": { ... } }'></textarea>
+                    <small style="display:block; margin-top:6px; color:#666;">Per-tool settings: API key env vars, slugs, collection names. See the Help panel for a complete example.</small>
+                    <div id="toolConfigError" style="color:#d33; font-size:13px; margin-top:4px; display:none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="suggestedPrompts">Suggested Prompts (JSON array)</label>
+                    <textarea id="suggestedPrompts" name="suggested_prompts" rows="4" style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size:13px;" placeholder='["Tell me about X", "I want to schedule a call"]'></textarea>
+                    <small style="display:block; margin-top:6px; color:#666;">Tappable starter prompts shown to the visitor when the widget opens. Up to 4 recommended.</small>
+                    <div id="suggestedPromptsError" style="color:#d33; font-size:13px; margin-top:4px; display:none;"></div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Bot</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1062,6 +1112,11 @@
             document.querySelector('input[name="api-key-source"][value="select"]').checked = true;
             toggleApiKeySource();
 
+            // Reset tools section
+            renderToolsEnabledCheckboxes([]);
+            document.getElementById('toolConfig').value = '{}';
+            document.getElementById('suggestedPrompts').value = '[]';
+
             document.getElementById('bot-modal').style.display = 'block';
         }
 
@@ -1181,6 +1236,54 @@
             document.getElementById('bot-model')?.addEventListener('change', updateGPT5SettingsVisibility);
         });
 
+        // ========================================
+        // TOOLS ENABLED / TOOL CONFIG / SUGGESTED PROMPTS
+        // ========================================
+
+        let _availableTools = []; // cached after first fetch
+
+        async function loadAvailableTools() {
+            if (_availableTools.length) return _availableTools;
+            try {
+                const resp = await fetch('/api/tools');
+                if (!resp.ok) return [];
+                _availableTools = await resp.json();
+                return _availableTools;
+            } catch (e) {
+                console.error('Failed to load /api/tools:', e);
+                return [];
+            }
+        }
+
+        async function renderToolsEnabledCheckboxes(currentlyEnabled) {
+            const container = document.getElementById('toolsEnabledCheckboxes');
+            if (!container) return;
+            const tools = await loadAvailableTools();
+            const enabledSet = new Set(currentlyEnabled || []);
+            if (!tools.length) {
+                container.innerHTML = '<p style="color:#888;">No tools registered.</p>';
+                return;
+            }
+            container.innerHTML = tools.map(t => `
+                <label title="${(t.description || '').replace(/"/g, '&quot;')}">
+                    <input type="checkbox" name="tool_${t.name}" value="${t.name}" ${enabledSet.has(t.name) ? 'checked' : ''}>
+                    <span><span class="tool-name">${t.name}</span></span>
+                </label>
+            `).join('');
+        }
+
+        function getCheckedTools() {
+            const container = document.getElementById('toolsEnabledCheckboxes');
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+        }
+
+        // Pre-load tools on page load so checkboxes are ready immediately
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAvailableTools();
+        });
+
         document.getElementById('bot-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -1202,6 +1305,31 @@
                 widget_title: document.getElementById('bot-widget-title').value,
                 widget_color: document.getElementById('bot-widget-color').value,
             };
+
+            // Parse tool_config + suggested_prompts JSON; abort with inline error on parse failure.
+            let toolConfigVal;
+            try {
+                toolConfigVal = JSON.parse(document.getElementById('toolConfig').value || '{}');
+                document.getElementById('toolConfigError').style.display = 'none';
+            } catch (e) {
+                const err = document.getElementById('toolConfigError');
+                err.textContent = 'Invalid JSON: ' + e.message;
+                err.style.display = 'block';
+                return; // abort submit
+            }
+            let suggestedPromptsVal;
+            try {
+                suggestedPromptsVal = JSON.parse(document.getElementById('suggestedPrompts').value || '[]');
+                document.getElementById('suggestedPromptsError').style.display = 'none';
+            } catch (e) {
+                const err = document.getElementById('suggestedPromptsError');
+                err.textContent = 'Invalid JSON: ' + e.message;
+                err.style.display = 'block';
+                return;
+            }
+            botData.tools_enabled = getCheckedTools();
+            botData.tool_config = toolConfigVal;
+            botData.suggested_prompts = suggestedPromptsVal;
 
             // Handle API key based on source
             const apiKeySource = document.querySelector('input[name="api-key-source"]:checked').value;
@@ -1283,6 +1411,15 @@
                 document.getElementById('bot-enable-suggestions').checked = bot.enable_suggestions || false;
                 document.getElementById('bot-widget-title').value = bot.widget_title || '';
                 document.getElementById('bot-widget-color').value = bot.widget_color;
+
+                // Tools section
+                renderToolsEnabledCheckboxes(bot.tools_enabled || []);
+                document.getElementById('toolConfig').value = bot.tool_config
+                    ? JSON.stringify(bot.tool_config, null, 2)
+                    : '{}';
+                document.getElementById('suggestedPrompts').value = bot.suggested_prompts
+                    ? JSON.stringify(bot.suggested_prompts, null, 2)
+                    : '[]';
 
                 // Update visibility of conditional fields
                 toggleQdrantFields();
