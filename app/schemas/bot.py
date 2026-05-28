@@ -5,11 +5,13 @@ from datetime import datetime
 
 # Model-specific max token limits
 MODEL_MAX_TOKENS = {
-    # Claude 4.x
-    'claude-sonnet-4-5': 64000,
+    # Claude 4.x (current generation)
+    'claude-opus-4-7': 32000,
+    'claude-sonnet-4-6': 64000,
     'claude-haiku-4-5': 64000,
-    'claude-sonnet-4': 64000,
     'claude-opus-4-1': 32000,
+    'claude-sonnet-4-5': 64000,
+    'claude-sonnet-4': 64000,
     # Claude 3.x
     'claude-3-7': 128000,
     'claude-3-5-sonnet': 8000,
