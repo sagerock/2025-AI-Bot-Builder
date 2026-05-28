@@ -1,0 +1,8 @@
+name: off_topic_redirect
+description: Visitor asks something unrelated; Cairn politely redirects.
+
+turns:
+  - user: "What's the best AI image generator for marketing?"
+    expect:
+      response_contains_any: ["SageRock", "Sage", "focused"]
+      # Cairn should not give a long opinion on image generators.

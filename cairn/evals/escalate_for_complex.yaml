@@ -1,0 +1,8 @@
+name: escalate_for_complex
+description: Visitor asks something Cairn can't answer; Cairn escalates.
+
+turns:
+  - user: "We're a school district with 12 schools and we need a single sign-on integration with our existing Active Directory plus FERPA compliance docs. Can you give me a SOW?"
+    expect:
+      tools_called_any: ["escalate_to_sage"]
+      response_contains_any: ["Sage", "reach out", "follow up", "directly"]

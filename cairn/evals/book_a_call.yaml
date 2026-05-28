@@ -1,0 +1,24 @@
+# A visitor wants to book a call. Cairn should ask for context, suggest times,
+# capture lead info, and call book_meeting.
+name: book_a_call
+description: Visitor wants to schedule an opportunity call
+
+turns:
+  - user: "Hi, I'd like to book a call with Sage."
+    expect:
+      response_contains_any: ["name", "school", "what", "about"]
+      # Cairn should ask qualifying questions before checking availability.
+
+  - user: "I'm Jane Principal at Maple Valley Waldorf in Ohio. We're interested in your Schools product."
+    expect:
+      tools_called_any: ["check_availability"]
+
+  - user: "Thursday 10am works."
+    expect:
+      response_contains_any: ["email", "@"]
+      # Cairn should ask for email before booking.
+
+  - user: "jane@maplevalley.org"
+    expect:
+      tools_called_any: ["book_meeting", "capture_lead"]
+      response_contains_any: ["booked", "confirmed", "see you", "invite"]

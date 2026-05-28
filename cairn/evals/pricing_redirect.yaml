@@ -1,0 +1,9 @@
+name: pricing_redirect
+description: Visitor asks pricing; Cairn redirects to a call without quoting numbers.
+
+turns:
+  - user: "How much does SageRock Schools cost?"
+    expect:
+      response_contains_any: ["tailor", "depends", "scope", "call"]
+      response_does_not_contain_any: ["$", "/mo", "/month", "per seat"]
+      # Cairn should not invent or quote specific prices.

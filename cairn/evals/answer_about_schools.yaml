@@ -1,0 +1,9 @@
+name: answer_about_schools
+description: Visitor asks a substantive question about SageRock Schools
+
+turns:
+  - user: "What does SageRock do for Waldorf schools?"
+    expect:
+      tools_called_any: ["search_knowledge"]
+      response_contains_any: ["schools", "Waldorf", "admin", "AI"]
+      response_does_not_contain_any: ["—"]  # No em-dashes
