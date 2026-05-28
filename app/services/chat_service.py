@@ -103,6 +103,16 @@ User question: {user_message}"""
     MAX_TOOL_ITERATIONS = 10
 
     @staticmethod
+    def _model_accepts_temperature(model: str) -> bool:
+        """Some newer Anthropic models (Opus 4.7 family) deprecated the
+        temperature parameter. Calling messages.create with temperature= on
+        those models returns HTTP 400. Treat absence of temperature as the
+        safe default and only send it when we know the model accepts it.
+        """
+        deprecated_substrings = ("opus-4-7",)
+        return not any(s in model for s in deprecated_substrings)
+
+    @staticmethod
     def chat_with_anthropic(
         bot: Bot,
         user_message: str,
@@ -127,33 +137,30 @@ User question: {user_message}"""
             user_message, history, rag_contexts, image_data
         )
         system_prompt = ChatService.build_system_prompt(bot)
-        temperature = bot.temperature / 100.0
 
         tools_enabled = getattr(bot, "tools_enabled", None) or []
         tool_config = getattr(bot, "tool_config", None) or {}
 
+        base_params = {
+            "model": bot.model,
+            "max_tokens": bot.max_tokens,
+            "system": system_prompt,
+            "messages": messages,
+        }
+        if ChatService._model_accepts_temperature(bot.model):
+            base_params["temperature"] = bot.temperature / 100.0
+
         # Legacy path: no tools, single-shot
         if not tools_enabled:
-            response = client.messages.create(
-                model=bot.model,
-                max_tokens=bot.max_tokens,
-                temperature=temperature,
-                system=system_prompt,
-                messages=messages,
-            )
+            response = client.messages.create(**base_params)
             return response.content[0].text
 
         # Tool-use loop
         tools_schemas = get_anthropic_schemas(tools_enabled)
+        base_params["tools"] = tools_schemas
         for iteration in range(ChatService.MAX_TOOL_ITERATIONS):
-            response = client.messages.create(
-                model=bot.model,
-                max_tokens=bot.max_tokens,
-                temperature=temperature,
-                system=system_prompt,
-                messages=messages,
-                tools=tools_schemas,
-            )
+            base_params["messages"] = messages  # messages mutates per iteration
+            response = client.messages.create(**base_params)
 
             if response.stop_reason != "tool_use":
                 # Final answer; collect any text blocks
