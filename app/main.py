@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.database import init_db
 from app.api import bots, chat, api_keys, qdrant, documents, auth_token, webhooks, analytics
+from app.api.tools import router as tools_router
 from app import auth
 import os
 
@@ -34,6 +35,7 @@ app.include_router(api_keys.router)
 app.include_router(qdrant.router)
 app.include_router(documents.router)
 app.include_router(analytics.router)
+app.include_router(tools_router)
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
