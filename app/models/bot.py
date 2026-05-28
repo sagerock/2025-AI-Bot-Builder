@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer, ForeignKey
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -44,6 +44,11 @@ class Bot(Base):
     widget_title = Column(String(255), nullable=True)
     widget_color = Column(String(7), default="#0066CC")  # Hex color
     widget_greeting = Column(Text, nullable=True)
+
+    # Tools (added 2026-05-28)
+    tools_enabled = Column(JSON, default=list, nullable=False)  # ["search_knowledge", ...]
+    tool_config = Column(JSON, default=dict, nullable=False)    # {"cal_com": {...}, ...}
+    suggested_prompts = Column(JSON, default=list, nullable=False)  # ["Tell me about ...", ...]
 
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
