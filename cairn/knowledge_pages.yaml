@@ -1,0 +1,19 @@
+# Pages to index into the Qdrant "sagerock" collection for Cairn's RAG.
+# Each entry: a public URL + an optional human-readable label.
+# Sage edits this list when adding/removing content; seed_qdrant.py reads it.
+
+collection: sagerock
+chunk_size: 800       # chars per chunk
+chunk_overlap: 100    # chars overlap
+
+pages:
+  - url: https://sagerock.com/
+    label: SageRock homepage
+  - url: https://sagerock.com/schools/
+    label: SageRock Schools (product page)
+  - url: https://sagerock.com/about/
+    label: About Sage
+  - url: https://sagerock.com/contact/
+    label: Contact / how to reach Sage
+  # Add more URLs as content goes live. Each new entry indexes on the next
+  # seed_qdrant.py run (the script clears the collection and re-seeds).
