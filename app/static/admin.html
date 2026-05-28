@@ -458,8 +458,11 @@
     <div class="container">
         <header>
             <h1>🤖 AI Bot Builder</h1>
-            <div id="header-actions">
-                <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Bot</button>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button id="helpButton" class="btn btn-secondary" onclick="openHelpModal()">Help</button>
+                <div id="header-actions">
+                    <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Bot</button>
+                </div>
             </div>
         </header>
 
@@ -2583,5 +2586,87 @@
         }
 
     </script>
+
+<!-- Help Modal -->
+<div id="helpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;width:min(900px,92vw);max-height:88vh;overflow:auto;border-radius:12px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="margin:0;">Bot Builder Help</h2>
+      <button onclick="closeHelpModal()" style="background:none;border:none;font-size:22px;cursor:pointer;">×</button>
+    </div>
+    <div id="helpTabs" style="display:flex;gap:8px;border-bottom:1px solid #ddd;margin-bottom:16px;">
+      <button class="help-tab" data-tab="tools" onclick="showHelpTab('tools')">Tools</button>
+      <button class="help-tab" data-tab="envvars" onclick="showHelpTab('envvars')">Env vars</button>
+      <button class="help-tab" data-tab="toolconfig" onclick="showHelpTab('toolconfig')">Tool config</button>
+      <button class="help-tab" data-tab="quickstart" onclick="showHelpTab('quickstart')">Quick start</button>
+    </div>
+    <div id="helpContent"></div>
+  </div>
+</div>
+
+<style>
+  .help-tab { background:#f5f5f5; border:none; padding:8px 14px; border-radius:6px 6px 0 0; cursor:pointer; }
+  .help-tab.active { background:#2c3e50; color:#fff; }
+  #helpContent h3 { margin-top:1.2em; }
+  #helpContent pre { background:#f5f5f5; padding:12px; border-radius:6px; overflow-x:auto; font-size:13px; }
+  #helpContent table { width:100%; border-collapse:collapse; margin:0.8em 0; }
+  #helpContent th, #helpContent td { border:1px solid #ddd; padding:8px; text-align:left; vertical-align:top; }
+  #helpContent th { background:#f5f5f5; }
+  .tool-card { border:1px solid #ddd; border-radius:8px; padding:14px; margin-bottom:12px; }
+  .tool-card h4 { margin:0 0 6px 0; color:#2c3e50; }
+  .tool-card .tool-desc { color:#555; margin-bottom:8px; }
+  .tool-card .tool-args { font-size:13px; }
+</style>
+
+<script>
+  function openHelpModal() {
+    document.getElementById('helpModal').style.display = 'flex';
+    showHelpTab('tools');
+  }
+  function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
+  }
+  function showHelpTab(tabName) {
+    document.querySelectorAll('.help-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.tab === tabName));
+    const content = document.getElementById('helpContent');
+    content.innerHTML = '<p>Loading...</p>';
+    if (tabName === 'tools') renderToolsTab(content);
+    else if (tabName === 'envvars') content.innerHTML = ENV_VARS_HTML;
+    else if (tabName === 'toolconfig') content.innerHTML = TOOL_CONFIG_HTML;
+    else if (tabName === 'quickstart') content.innerHTML = QUICK_START_HTML;
+  }
+
+  async function renderToolsTab(container) {
+    try {
+      const resp = await fetch('/api/tools');
+      const tools = await resp.json();
+      container.innerHTML = `
+        <p>These tools can be enabled on any bot via the "tools_enabled" field.
+        Each tool reads its credentials from environment variables and its
+        per-bot settings from "tool_config".</p>
+        ${tools.map(t => `
+          <div class="tool-card">
+            <h4>${t.name}</h4>
+            <div class="tool-desc">${t.description}</div>
+            <div class="tool-args">
+              <strong>Inputs:</strong>
+              <ul>${Object.entries(t.input_schema.properties || {}).map(([key, val]) =>
+                `<li><code>${key}</code> (${val.type})${(t.input_schema.required || []).includes(key) ? ' <em>required</em>' : ''} — ${val.description || ''}</li>`
+              ).join('')}</ul>
+            </div>
+          </div>
+        `).join('')}
+      `;
+    } catch (e) {
+      container.innerHTML = `<p style="color:red;">Could not load tools: ${e.message}</p>`;
+    }
+  }
+
+  // Static help content as template strings (filled in Task 3)
+  const ENV_VARS_HTML = `<p>Loading...</p>`;
+  const TOOL_CONFIG_HTML = `<p>Loading...</p>`;
+  const QUICK_START_HTML = `<p>Loading...</p>`;
+</script>
 </body>
 </html>
