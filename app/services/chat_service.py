@@ -176,9 +176,9 @@ User question: {user_message}"""
                         result = TOOL_REGISTRY[tool_name].run(tool_input, tool_config)
                         result_str = ChatService._tool_result_to_string(result)
                     except Exception as e:
-                        result_str = f'{{"error": "tool_execution_failed", "detail": "{e}"}}'
+                        result_str = json.dumps({"error": "tool_execution_failed", "detail": str(e)})
                 else:
-                    result_str = f'{{"error": "unknown_tool", "name": "{tool_name}"}}'
+                    result_str = json.dumps({"error": "unknown_tool", "name": tool_name})
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
