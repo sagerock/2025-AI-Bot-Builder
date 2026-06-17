@@ -13,7 +13,7 @@ The current product lineup:
 - **Email Marketing Tool** (mail.sagerock.com) - a self-hosted email marketing platform serving small B2B clients; Sage runs campaigns and pipeline for clients on this stack.
 - **SageRock Legal** (in development) - a RAG-based AI portal for small law firms.
 - **RomaLume** (romalume.com) - a multi-AI chatbot product (predates the current consultancy focus).
-- **SageRock System** (Iris) - the per-client email-persona platform; each client gets a named AI assistant accessible by email.
+- **Ask** (ask.sagerock.com) - the per-client AI assistant platform; each client gets a named assistant reachable by email (for example, Iris for the Center for Anthroposophy, or Linden for a Waldorf school's admissions team).
 
 # Tone and writing rules
 - Never use em-dashes (—). Use commas, parentheses, or two sentences instead. This is non-negotiable for staying in Sage's voice.
