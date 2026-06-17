@@ -214,6 +214,68 @@ async def get_timeline_analytics(
     return {"timeline": daily_stats, "days": days}
 
 
+@router.get("/bots/{bot_id}/conversations")
+async def list_bot_conversations(
+    bot_id: str,
+    limit: int = 50,
+    username: str = Depends(require_auth_dependency),
+    db: Session = Depends(get_db)
+):
+    """List a bot's conversations (newest first) with message counts. Metadata only."""
+    rows = db.query(
+        Conversation.id,
+        Conversation.session_id,
+        Conversation.created_at,
+        Conversation.updated_at,
+        func.count(Message.id).label("message_count"),
+    ).join(Message)\
+     .filter(Conversation.bot_id == bot_id)\
+     .group_by(Conversation.id, Conversation.session_id, Conversation.created_at, Conversation.updated_at)\
+     .order_by(Conversation.created_at.desc())\
+     .limit(min(limit, 500))\
+     .all()
+    return [
+        {
+            "conversation_id": r.id,
+            "session_id": r.session_id,
+            "started_at": r.created_at.isoformat() if r.created_at else None,
+            "last_message_at": r.updated_at.isoformat() if r.updated_at else None,
+            "message_count": r.message_count,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def get_conversation_messages(
+    conversation_id: str,
+    username: str = Depends(require_auth_dependency),
+    db: Session = Depends(get_db)
+):
+    """Return the full transcript (all messages) of a single conversation."""
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    msgs = db.query(Message)\
+        .filter(Message.conversation_id == conversation_id)\
+        .order_by(Message.created_at.asc())\
+        .all()
+    return {
+        "conversation_id": conv.id,
+        "bot_id": conv.bot_id,
+        "session_id": conv.session_id,
+        "started_at": conv.created_at.isoformat() if conv.created_at else None,
+        "messages": [
+            {
+                "role": m.role,
+                "content": m.content,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in msgs
+        ],
+    }
+
+
 @router.get("/bots/{bot_id}")
 async def get_bot_detail_analytics(
     bot_id: str,
