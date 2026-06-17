@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # tolerate undeclared .env keys (e.g. CAL_COM_API_KEY, read via os.getenv)
 
 
 settings = Settings()

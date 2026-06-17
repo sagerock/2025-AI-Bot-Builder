@@ -1,0 +1,81 @@
+<!--
+  Cairn concierge — sitewide embed for sagerock.com
+  Paste this whole block into a "headers & footers" snippet plugin (WPCode,
+  or "Insert Headers and Footers" by WPBeginner) in the FOOTER / before-</body> slot.
+  Loads on every page. Removing it = delete the snippet. No theme files touched.
+
+  - First <script>: the floating chat bubble (bottom-right) -> opens Cairn in an iframe.
+  - <style>: bubble color + the "Questions? Chat with Cairn" label pill beside it.
+    (The widget's own color/label fetch is auth-gated in prod, so we set them here.)
+  - Second <script>: injects the label and lets any element with class "sr-open-cairn"
+    open Cairn. The /schools/ button uses that class; it degrades to its mailto: href
+    if this snippet is ever removed.
+-->
+<script src="https://aibots.sagerock.com/static/widget.js"
+        data-bot-id="48a9250d-fe83-4e66-a48f-1f65b14323e5"></script>
+
+<style>
+  #ai-bot-toggle { background: #B25E2F !important; } /* SageRock terra-cotta */
+
+  /* sagerock.com's theme shrinks all <svg> width to 0; force the chat icon back */
+  #ai-bot-toggle svg { width: 28px !important; height: 28px !important; flex: none !important; }
+
+  /* Label pill that sits to the left of the bubble */
+  #cairn-label {
+    position: absolute;
+    bottom: 7px;
+    right: 72px;
+    white-space: nowrap;
+    background: #ffffff;
+    color: #040F49;
+    font: 600 14px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    border: 1px solid rgba(4, 15, 73, .12);
+    border-left: 4px solid #B25E2F;
+    padding: 13px 16px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .14);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #cairn-label:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+  }
+  @media (max-width: 600px) { #cairn-label { display: none; } } /* keep mobile clean */
+</style>
+
+<script>
+  (function () {
+    function openCairn() {
+      var toggle = document.getElementById('ai-bot-toggle');
+      var win    = document.getElementById('ai-bot-chat-window');
+      if (!toggle) return;                                       // widget not loaded yet
+      if (!win || win.style.display !== 'flex') toggle.click();  // open only if closed
+      var label = document.getElementById('cairn-label');
+      if (label) label.style.display = 'none';                   // tuck label away once open
+    }
+
+    // Any link/button with class "sr-open-cairn" opens Cairn (e.g. the /schools/ CTA)
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('.sr-open-cairn');
+      if (trigger) { e.preventDefault(); openCairn(); }
+    });
+
+    // Add the label pill next to the bubble once the widget has injected itself
+    function addLabel() {
+      var widget = document.getElementById('ai-bot-widget');
+      if (!widget || document.getElementById('cairn-label')) return true;
+      var label = document.createElement('button');
+      label.id = 'cairn-label';
+      label.type = 'button';
+      label.className = 'sr-open-cairn';
+      label.textContent = 'Questions? Chat with Cairn';
+      widget.appendChild(label);
+      return true;
+    }
+    var tries = 0;
+    var t = setInterval(function () {
+      if (addLabel() || ++tries > 40) clearInterval(t);  // give the widget up to ~10s
+    }, 250);
+  })();
+</script>

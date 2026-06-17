@@ -39,6 +39,20 @@ def extract_text_from_html(html: str) -> str:
     return "\n".join(lines)
 
 
+def extract_text_from_markdown(md: str) -> str:
+    """Lightly strip Markdown markup to plain text for embedding."""
+    import re
+    text = md
+    text = re.sub(r"^---\n.*?\n---\n", "", text, flags=re.S)   # YAML frontmatter
+    text = re.sub(r"`{1,3}", "", text)                          # code ticks
+    text = re.sub(r"^\s{0,3}#{1,6}\s*", "", text, flags=re.M)   # heading hashes
+    text = re.sub(r"\*\*|__|\*|_", "", text)                    # bold/italic
+    text = re.sub(r"^\s*[-*+]\s+", "", text, flags=re.M)        # bullet markers
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)        # links -> label
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return "\n".join(lines)
+
+
 def chunk_text(text: str, size: int = 800, overlap: int = 100) -> list[str]:
     """Split text into overlapping windows of `size` chars."""
     if len(text) <= size:
@@ -76,20 +90,35 @@ def seed(config_path: Path, dry_run: bool = False) -> None:
     all_metadatas = []
 
     for page in pages:
-        url = page["url"]
-        label = page.get("label", url)
-        print(f"  Fetching {label} ({url})")
-        try:
-            html = fetch_page(url)
-        except Exception as e:
-            print(f"    SKIP -- fetch failed: {e}")
-            continue
-        text = extract_text_from_html(html)
+        # An entry is either a remote URL ("url") or a local file ("path").
+        if page.get("path"):
+            path = (config_path.parent / page["path"]).resolve()
+            source = str(path)
+            label = page.get("label", page["path"])
+            print(f"  Reading {label} ({page['path']})")
+            try:
+                raw = path.read_text(encoding="utf-8")
+            except Exception as e:
+                print(f"    SKIP -- read failed: {e}")
+                continue
+            text = extract_text_from_markdown(raw)
+        else:
+            url = page["url"]
+            source = url
+            label = page.get("label", url)
+            print(f"  Fetching {label} ({url})")
+            try:
+                html = fetch_page(url)
+            except Exception as e:
+                print(f"    SKIP -- fetch failed: {e}")
+                continue
+            text = extract_text_from_html(html)
+
         chunks = chunk_text(text, size=chunk_size, overlap=overlap)
         print(f"    {len(text)} chars -> {len(chunks)} chunks")
         for chunk in chunks:
             all_texts.append(chunk)
-            all_metadatas.append({"source": url, "label": label})
+            all_metadatas.append({"source": source, "label": label})
 
     if dry_run:
         print(f"\nDRY RUN -- would upload {len(all_texts)} chunks. Exiting.")

@@ -7,6 +7,7 @@ chunk_size: 800       # chars per chunk
 chunk_overlap: 100    # chars overlap
 
 pages:
+  # --- Live site pages (fetched over HTTP) ---
   - url: https://sagerock.com/
     label: SageRock homepage
   - url: https://sagerock.com/schools/
@@ -14,5 +15,26 @@ pages:
   - url: https://sagerock.com/contact/
     label: Contact / how to reach Sage
   # /about/ removed 2026-05-28: page returned 404. Add back when it exists.
-  # Add more URLs as content goes live. Each new entry indexes on the next
-  # seed_qdrant.py run (the script clears the collection and re-seeds).
+
+  # --- Local knowledge articles (read from disk, paths relative to this file) ---
+  # Distilled from the AWSNA 2026 booth handouts. See knowledge/README.md.
+  - path: knowledge/about-sagerock.md
+    label: About SageRock
+  - path: knowledge/how-we-work-with-schools.md
+    label: How SageRock works with schools
+  - path: knowledge/enrollment-audit.md
+    label: The Enrollment Audit and Wire-Up
+  - path: knowledge/pricing-and-plans.md
+    label: SageRock pricing and plans
+  - path: knowledge/ai-assistants-overview.md
+    label: SageRock AI assistants overview
+  - path: knowledge/case-study-spring-garden-waldorf.md
+    label: Case study - Spring Garden Waldorf School (Linden)
+  - path: knowledge/case-study-center-for-anthroposophy.md
+    label: Case study - Center for Anthroposophy (Iris)
+  - path: knowledge/case-study-b2b-manufacturer.md
+    label: Case study - national manufacturer (Athena)
+  - path: knowledge/meet-rocky-lewis.md
+    label: Meet Rocky Lewis
+  # Add more URLs or local paths as content grows. Each seed_qdrant.py run clears
+  # the collection and re-seeds everything listed here.
