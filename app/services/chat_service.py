@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from typing import Optional, List
 from anthropic import Anthropic
 from openai import OpenAI
@@ -31,7 +32,21 @@ class ChatService:
     @staticmethod
     def build_system_prompt(bot: Bot) -> str:
         """Build system prompt with optional suggestion instructions"""
-        base_prompt = bot.system_prompt
+        # Inject today's date so the model can resolve relative dates ("this week",
+        # "tomorrow") and pass correct ranges to date-based tools (e.g. check_availability).
+        try:
+            from zoneinfo import ZoneInfo
+            now = datetime.now(ZoneInfo("America/New_York"))
+            tz_label = "America/New_York"
+        except Exception:
+            now = datetime.now(timezone.utc)
+            tz_label = "UTC"
+        date_line = (
+            f"Today's date is {now.strftime('%A, %B %d, %Y')} ({tz_label}). "
+            "Use this to interpret relative dates like \"this week\", \"next week\", or "
+            "\"tomorrow\", and when calling tools that need a date range.\n\n"
+        )
+        base_prompt = date_line + bot.system_prompt
 
         if bot.enable_suggestions:
             suggestion_instructions = """
