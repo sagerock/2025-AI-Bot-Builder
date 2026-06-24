@@ -72,8 +72,8 @@
         const iconChat = document.getElementById('ai-bot-icon-chat');
         const iconClose = document.getElementById('ai-bot-icon-close');
 
-        // Load bot color
-        fetch(`${apiBase}/api/bots/${botId}`)
+        // Load bot color from the public (no-auth) config endpoint
+        fetch(`${apiBase}/api/bots/${botId}/public`)
             .then(res => res.json())
             .then(bot => {
                 if (bot.widget_color) {
