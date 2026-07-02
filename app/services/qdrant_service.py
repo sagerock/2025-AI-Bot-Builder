@@ -49,12 +49,13 @@ class QdrantService:
             return []
 
         try:
-            results = self.client.search(
+            # qdrant-client 1.18 removed the deprecated .search(); query_points is the replacement
+            results = self.client.query_points(
                 collection_name=collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=top_k
             )
-            return results
+            return results.points
         except Exception as e:
             print(f"Qdrant search error: {e}")
             return []
