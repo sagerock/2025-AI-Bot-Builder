@@ -1405,7 +1405,18 @@
                 document.getElementById('bot-reasoning-effort').value = bot.reasoning_effort || 'medium';
                 document.getElementById('bot-text-verbosity').value = bot.text_verbosity || 'medium';
                 document.getElementById('bot-use-qdrant').checked = bot.use_qdrant;
-                document.getElementById('bot-qdrant-collection').value = bot.qdrant_collection || '';
+                // Seed the select with the saved collection so its value survives until
+                // loadCollectionsForBot() replaces the options (a <select> silently ignores
+                // .value assignments with no matching <option>).
+                const collectionSelect = document.getElementById('bot-qdrant-collection');
+                collectionSelect.innerHTML = '<option value="">Select a collection...</option>';
+                if (bot.qdrant_collection) {
+                    const savedOpt = document.createElement('option');
+                    savedOpt.value = bot.qdrant_collection;
+                    savedOpt.textContent = bot.qdrant_collection;
+                    collectionSelect.appendChild(savedOpt);
+                }
+                collectionSelect.value = bot.qdrant_collection || '';
                 document.getElementById('bot-qdrant-top-k').value = bot.qdrant_top_k;
                 document.getElementById('bot-enable-memory').checked = bot.enable_memory;
                 document.getElementById('bot-enable-suggestions').checked = bot.enable_suggestions || false;
@@ -2003,6 +2014,14 @@
                 selectEl.innerHTML = '<option value="">Select a collection...</option>';
 
                 if (collections.length === 0) {
+                    // Re-seed the saved value so it isn't lost to the innerHTML reset above
+                    if (currentValue) {
+                        const keepOpt = document.createElement('option');
+                        keepOpt.value = currentValue;
+                        keepOpt.textContent = `${currentValue} (not found on server)`;
+                        selectEl.appendChild(keepOpt);
+                        selectEl.value = currentValue;
+                    }
                     statusEl.textContent = 'No collections found';
                     statusEl.style.color = '#dc3545';
                     return;
@@ -2016,8 +2035,16 @@
                     selectEl.appendChild(option);
                 });
 
-                // Restore previously selected value if it exists
-                if (currentValue && collections.some(c => c.name === currentValue)) {
+                // Restore previously selected value; keep it even if the server list
+                // doesn't include it (e.g. Qdrant briefly unreachable) so an edit+save
+                // can't silently wipe a bot's collection.
+                if (currentValue) {
+                    if (!collections.some(c => c.name === currentValue)) {
+                        const keepOpt = document.createElement('option');
+                        keepOpt.value = currentValue;
+                        keepOpt.textContent = `${currentValue} (not found on server)`;
+                        selectEl.appendChild(keepOpt);
+                    }
                     selectEl.value = currentValue;
                 }
 

@@ -19,7 +19,7 @@ anthropic==0.71.0
 openai==1.105.0
 
 # Qdrant & Document Processing
-qdrant-client==1.14.2
+qdrant-client==1.18.0
 langchain>=0.3.0
 langchain-core>=0.3.0
 langchain-text-splitters>=0.3.0
