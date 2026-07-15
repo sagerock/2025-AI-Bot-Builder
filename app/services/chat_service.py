@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List
 from anthropic import Anthropic
@@ -8,6 +9,22 @@ from app.schemas.chat import ChatMessage
 from app.services.qdrant_service import qdrant_service
 from app.services.embedding_service import embedding_service
 from app.config import settings
+
+log = logging.getLogger(__name__)
+
+
+def _log_anthropic_usage(bot: Bot, response) -> None:
+    """Cache telemetry: cache_read > 0 means the prompt cache is working;
+    all-zero cache fields on repeat chats means a silent no-op (e.g. the
+    bot's system prompt + tools are below the model's cacheable minimum)."""
+    u = response.usage
+    log.info(
+        "anthropic usage bot=%s model=%s input=%s output=%s cache_read=%s cache_write=%s",
+        getattr(bot, "id", "?"), bot.model,
+        u.input_tokens, u.output_tokens,
+        getattr(u, "cache_read_input_tokens", 0) or 0,
+        getattr(u, "cache_creation_input_tokens", 0) or 0,
+    )
 from app.tools import TOOL_REGISTRY, get_anthropic_schemas
 
 
@@ -176,6 +193,7 @@ User question: {user_message}"""
         # Legacy path: no tools, single-shot
         if not tools_enabled:
             response = client.messages.create(**base_params)
+            _log_anthropic_usage(bot, response)
             return response.content[0].text
 
         # Tool-use loop
@@ -184,6 +202,7 @@ User question: {user_message}"""
         for iteration in range(ChatService.MAX_TOOL_ITERATIONS):
             base_params["messages"] = messages  # messages mutates per iteration
             response = client.messages.create(**base_params)
+            _log_anthropic_usage(bot, response)
 
             if response.stop_reason != "tool_use":
                 # Final answer; collect any text blocks
