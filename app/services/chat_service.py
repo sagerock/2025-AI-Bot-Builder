@@ -159,7 +159,15 @@ User question: {user_message}"""
         base_params = {
             "model": bot.model,
             "max_tokens": bot.max_tokens,
-            "system": system_prompt,
+            # Cached system block: the prefix (tool schemas + system prompt) is
+            # identical across every iteration of the tool loop and every chat
+            # turn for the same bot, so repeats bill at ~10% of input price.
+            # The date line only invalidates the cache once per day.
+            "system": [{
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }],
             "messages": messages,
         }
         if ChatService._model_accepts_temperature(bot.model):
