@@ -92,6 +92,14 @@ class QdrantService:
                         result.payload.get('page_content') or
                         str(result.payload)
                     )
+                    # Surface document metadata so bots can cite sources
+                    # (Flowise-era collections store {content, metadata: {fileName, source}})
+                    meta = result.payload.get('metadata')
+                    if isinstance(meta, dict):
+                        file_name = meta.get('fileName') or meta.get('file_name')
+                        source = meta.get('source')
+                        if file_name or source:
+                            text = f"{text}\n[Source document: {file_name or 'unknown'} | URL: {source or 'n/a'}]"
                     contexts.append(text)
 
             return contexts
