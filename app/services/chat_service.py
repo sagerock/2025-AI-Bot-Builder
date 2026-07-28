@@ -10,7 +10,7 @@ from app.services.qdrant_service import qdrant_service
 from app.services.embedding_service import embedding_service
 from app.config import settings
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("uvicorn.error")
 
 
 def _log_anthropic_usage(bot: Bot, response) -> None:
@@ -141,7 +141,7 @@ User question: {user_message}"""
         those models returns HTTP 400. Treat absence of temperature as the
         safe default and only send it when we know the model accepts it.
         """
-        deprecated_substrings = ("opus-4-7",)
+        deprecated_substrings = ("opus-4-7", "opus-4-8", "opus-5", "sonnet-5", "fable-5", "mythos")
         return not any(s in model for s in deprecated_substrings)
 
     @staticmethod
@@ -194,7 +194,9 @@ User question: {user_message}"""
         if not tools_enabled:
             response = client.messages.create(**base_params)
             _log_anthropic_usage(bot, response)
-            return response.content[0].text
+            # Models with adaptive thinking (Sonnet 5 / Opus 5 / Fable 5) may lead
+            # with a thinking block — join the text blocks instead of content[0]
+            return "".join(b.text for b in response.content if b.type == "text")
 
         # Tool-use loop
         tools_schemas = get_anthropic_schemas(tools_enabled)

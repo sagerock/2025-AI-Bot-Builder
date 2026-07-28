@@ -1,6 +1,6 @@
 """Tests for chat_service tool-use loop."""
 from unittest.mock import patch, MagicMock
-from app.services.chat_service import ChatService
+from app.services.chat_service import ChatService, log
 
 
 def _stub_message(content_blocks, stop_reason="end_turn"):
@@ -25,6 +25,10 @@ def _tool_use_block(tool_id, name, inputs):
     b.name = name
     b.input = inputs
     return b
+
+
+def test_cache_telemetry_uses_uvicorn_logger():
+    assert log.name == "uvicorn.error"
 
 
 def test_no_tools_passes_through_to_simple_chat(fake_bot_no_tools):

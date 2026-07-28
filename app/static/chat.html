@@ -702,6 +702,15 @@
                       .replace(/>/g, '&gt;');
             html = html.replace(/__BR_TAG__/g, '<br>');
 
+            // Markdown links [text](url) — extract early so URLs survive the
+            // italic/bold rules (underscores in URLs would otherwise be mangled).
+            // http(s) only, so escaped javascript: URLs can never become links.
+            const mdLinks = [];
+            html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, linkText, url) => {
+                mdLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a>`);
+                return `@@MDLINK${mdLinks.length - 1}@@`;
+            });
+
             // Parse tables (markdown format with | separators)
             html = html.replace(/^\|(.+)\|$/gim, (match, content) => {
                 // Check if this is a separator line (|---|---|)
@@ -780,6 +789,11 @@
             if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<pre') && !html.startsWith('<table')) {
                 html = '<p>' + html + '</p>';
             }
+
+            // Restore extracted markdown links
+            mdLinks.forEach((link, i) => {
+                html = html.replace(`@@MDLINK${i}@@`, link);
+            });
 
             return html;
         }

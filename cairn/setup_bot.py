@@ -42,7 +42,7 @@ def cairn_config() -> dict:
         "widget_title": "Cairn",
         "widget_color": "#2c3e50",
         "widget_greeting": (
-            "Hi, I'm Cairn, SageRock's guide. I can answer questions about our work with "
+            "Hi, I'm Cairn, SageRock's AI guide. I can answer questions about our work with "
             "schools, law firms, email marketing, and AI bots, or book an opportunity call "
             "with Sage. What brings you by?"
         ),
