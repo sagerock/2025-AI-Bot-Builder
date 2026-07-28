@@ -34,6 +34,7 @@ class Bot(Base):
     use_qdrant = Column(Boolean, default=False)
     qdrant_collection = Column(String(255), nullable=True)
     qdrant_top_k = Column(Integer, default=5)
+    enable_full_document = Column(Boolean, default=True)  # Show Full Document Mode toggle in chat UI
 
     # Session Configuration
     enable_memory = Column(Boolean, default=True)

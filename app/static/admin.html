@@ -852,6 +852,10 @@
                         <label>Top K Results</label>
                         <input type="number" id="bot-qdrant-top-k" min="1" max="20" value="5">
                     </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="bot-enable-full-document" checked>
+                        <label>Show "Full Document Mode" toggle in chat</label>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -1300,6 +1304,7 @@
                 use_qdrant: document.getElementById('bot-use-qdrant').checked,
                 qdrant_collection: document.getElementById('bot-qdrant-collection').value,
                 qdrant_top_k: parseInt(document.getElementById('bot-qdrant-top-k').value),
+                enable_full_document: document.getElementById('bot-enable-full-document').checked,
                 enable_memory: document.getElementById('bot-enable-memory').checked,
                 enable_suggestions: document.getElementById('bot-enable-suggestions').checked,
                 widget_title: document.getElementById('bot-widget-title').value,
@@ -1405,6 +1410,7 @@
                 document.getElementById('bot-reasoning-effort').value = bot.reasoning_effort || 'medium';
                 document.getElementById('bot-text-verbosity').value = bot.text_verbosity || 'medium';
                 document.getElementById('bot-use-qdrant').checked = bot.use_qdrant;
+                document.getElementById('bot-enable-full-document').checked = bot.enable_full_document !== false;
                 // Seed the select with the saved collection so its value survives until
                 // loadCollectionsForBot() replaces the options (a <select> silently ignores
                 // .value assignments with no matching <option>).

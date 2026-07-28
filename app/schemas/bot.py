@@ -76,6 +76,7 @@ class BotBase(BaseModel):
     use_qdrant: bool = False
     qdrant_collection: Optional[str] = None
     qdrant_top_k: int = Field(default=5, ge=1, le=20)
+    enable_full_document: bool = True
 
     # Memory
     enable_memory: bool = True
@@ -113,6 +114,7 @@ class BotUpdate(BaseModel):
     use_qdrant: Optional[bool] = None
     qdrant_collection: Optional[str] = None
     qdrant_top_k: Optional[int] = Field(None, ge=1, le=20)
+    enable_full_document: Optional[bool] = None
     enable_memory: Optional[bool] = None
     memory_max_messages: Optional[int] = Field(None, ge=1, le=50)
     enable_suggestions: Optional[bool] = None

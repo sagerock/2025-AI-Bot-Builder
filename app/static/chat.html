@@ -627,7 +627,7 @@
                 }
 
                 // Load available documents if bot uses Qdrant
-                if (bot.use_qdrant && bot.qdrant_collection) {
+                if (bot.use_qdrant && bot.qdrant_collection && bot.enable_full_document !== false) {
                     await loadAvailableDocuments(bot.qdrant_collection);
                 }
             } catch (error) {

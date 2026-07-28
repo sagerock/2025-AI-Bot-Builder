@@ -42,6 +42,18 @@ def run_migrations():
         else:
             print("  ⏭️  enable_suggestions column already exists")
 
+        # Migration: Add enable_full_document column to bots table
+        if not column_exists('bots', 'enable_full_document'):
+            print("  ➕ Adding enable_full_document column to bots table...")
+            conn.execute(text(
+                "ALTER TABLE bots ADD COLUMN enable_full_document BOOLEAN DEFAULT TRUE"
+            ))
+            conn.commit()
+            migrations_run += 1
+            print("     ✅ Done")
+        else:
+            print("  ⏭️  enable_full_document column already exists")
+
         # Migration: Add reasoning_effort column to bots table (for GPT-5)
         if not column_exists('bots', 'reasoning_effort'):
             print("  ➕ Adding reasoning_effort column to bots table...")
