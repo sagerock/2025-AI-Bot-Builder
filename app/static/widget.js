@@ -2,7 +2,14 @@
     'use strict';
 
     // Get bot ID from script tag
-    const currentScript = document.currentScript;
+    // document.currentScript is null when a CMS injects the tag dynamically;
+    // fall back to the last widget.js tag on the page.
+    const currentScript = document.currentScript
+        || Array.from(document.querySelectorAll('script[src*="widget.js"][data-bot-id]')).pop();
+    if (!currentScript) {
+        console.error('AI Bot Widget: could not find the widget script tag');
+        return;
+    }
     const botId = currentScript.getAttribute('data-bot-id');
     const apiBase = currentScript.src.replace('/static/widget.js', '');
 
@@ -63,8 +70,9 @@
         </div>
     `;
 
-    // Inject widget into page
-    document.addEventListener('DOMContentLoaded', function() {
+    // Inject widget into page (run now if the page already loaded, e.g. tag added late by a CMS)
+    function initWidget() {
+        if (document.getElementById('ai-bot-widget')) return;
         document.body.insertAdjacentHTML('beforeend', widgetHTML);
 
         const toggle = document.getElementById('ai-bot-toggle');
@@ -107,5 +115,11 @@
             this.style.transform = 'scale(1)';
             this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWidget);
+    } else {
+        initWidget();
+    }
 })();
