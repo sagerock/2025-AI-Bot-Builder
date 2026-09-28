@@ -1,4 +1,4 @@
-"""Create (or update) the Cairn bot via the bot builder's REST API.
+"""Create (or update) the Jax bot (formerly Cairn) via the bot builder's REST API.
 
 Usage:
     python cairn/setup_bot.py --base-url https://<your-bot-builder>.up.railway.app
@@ -24,9 +24,9 @@ PROMPT_PATH = ROOT / "cairn" / "system_prompt.md"
 
 
 def cairn_config() -> dict:
-    """Return the full Bot create/update payload for Cairn."""
+    """Return the full Bot create/update payload for Jax."""
     return {
-        "name": "Cairn",
+        "name": "Jax",
         "description": "SageRock concierge - answers questions and books opportunity calls",
         "provider": "anthropic",
         "model": "claude-opus-4-7",
@@ -39,10 +39,10 @@ def cairn_config() -> dict:
         "enable_memory": True,
         "memory_max_messages": 20,
         "enable_suggestions": True,
-        "widget_title": "Cairn",
+        "widget_title": "Ask Jax",
         "widget_color": "#2c3e50",
         "widget_greeting": (
-            "Hi, I'm Cairn, SageRock's AI guide. I can answer questions about our work with "
+            "Hi, I'm Jax, SageRock's AI guide. I can answer questions about our work with "
             "schools, law firms, email marketing, and AI bots, or book an opportunity call "
             "with Sage. What brings you by?"
         ),
@@ -104,14 +104,14 @@ def setup(base_url: str, auth_cookie: str | None):
             cookies["session"] = auth_cookie
 
     with httpx.Client(cookies=cookies, timeout=30.0) as client:
-        existing_id = find_existing(client, base_url, "Cairn")
+        existing_id = find_existing(client, base_url, "Jax")
         payload = cairn_config()
 
         if existing_id:
-            print(f"Updating existing Cairn (id={existing_id})...")
+            print(f"Updating existing Jax (id={existing_id})...")
             response = client.put(f"{base_url}/api/bots/{existing_id}", json=payload)
         else:
-            print("Creating new Cairn bot...")
+            print("Creating new Jax bot...")
             response = client.post(f"{base_url}/api/bots", json=payload)
 
         if response.status_code >= 400:
@@ -126,7 +126,7 @@ def setup(base_url: str, auth_cookie: str | None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Create or update the Cairn bot")
+    parser = argparse.ArgumentParser(description="Create or update the Jax bot")
     parser.add_argument("--base-url", required=True,
                         help="Bot builder base URL (e.g. https://...up.railway.app)")
     parser.add_argument("--auth-cookie",
