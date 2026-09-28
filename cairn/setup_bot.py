@@ -42,9 +42,8 @@ def cairn_config() -> dict:
         "widget_title": "Ask Jax",
         "widget_color": "#2c3e50",
         "widget_greeting": (
-            "Hi, I'm Jax, SageRock's AI guide. I can answer questions about our work with "
-            "schools, law firms, email marketing, and AI bots, or book an opportunity call "
-            "with Sage. What brings you by?"
+            "Hi, I'm Jax, SageRock's guide. I can answer questions about our marketing, "
+            "school, and business services, or book a free call with Sage. What brings you by?"
         ),
         "tools_enabled": [
             "search_knowledge",
@@ -76,10 +75,10 @@ def cairn_config() -> dict:
             },
         },
         "suggested_prompts": [
-            "Tell me about SageRock Schools",
-            "I want to schedule a call",
             "What does SageRock do?",
-            "Show me your AI bot tools",
+            "How do you work with schools?",
+            "What do your services cost?",
+            "I want to schedule a call",
         ],
     }
 

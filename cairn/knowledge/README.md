@@ -1,4 +1,9 @@
-# Cairn knowledge articles
+# Cairn knowledge articles (NOT SEEDED since 2026-09-28)
+
+> **Retired from the KB 2026-09-28.** Sage decided Jax (formerly Cairn) should talk only
+> about what sagerock.com sells, so `knowledge_pages.yaml` now lists only live site pages.
+> These articles carried stale pricing (Managed from $250/mo) and non-site offerings.
+> Kept for reference; don't add them back without checking them against the site.
 
 Plain-language articles distilled from the AWSNA 2026 booth handouts
 (`sagerock/tradeshows/awsna-2026/`), written to feed Cairn's RAG knowledge base
